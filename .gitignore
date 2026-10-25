@@ -1,0 +1,21 @@
+node_modules/
+dist/
+artifacts/
+.profiles/
+.publication-local/
+test-results/
+playwright-report/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+*.pem
+*.key
+.DS_Store
+Thumbs.db
+# Local development records are retained on disk, outside the public tree.
+docs/DEVELOPMENT-PLAN.md
+docs/EXTRACTION-VALIDATION.md
+docs/VALIDATION-REPORT.md
+docs/TEST-MATRIX.md

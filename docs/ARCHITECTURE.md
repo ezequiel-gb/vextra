@@ -1,0 +1,17 @@
+# Architecture
+
+The panel/expanded extension page owns foreground operations. The MV3 worker registers toolbar and typed page-integration handlers; it has no durable task loop. The isolated content script reports location changes without sending page text. A packaged self-contained MAIN-world function reads known player fields; its results are revalidated against the requested video ID. Content-script senders cannot request privileged execution through the extension-page-only message boundary.
+
+The worker also mediates the bounded READ_NATIVE_TRANSCRIPT operation for trusted extension pages. After an empty direct caption response in Current Video, a packaged page function opens the description/transcript controls, verifies the requested language and reads the complete native initialSegments data. Continuations and DOM-only partial lists are rejected. It does not accept consent prompts, log in, fetch external code, read cookies or invoke arbitrary page commands. The result uses the same caption parser and local document pipeline; no browser-closed background runner is introduced.
+
+The YouTube source layer validates/canonicalizes input, discovers public player data, chooses tracks and fetches caption payloads. Embedded JSON is parsed with a bounded balanced scanner, never eval. Signed caption references are memory-only and host/path-restricted. Requests omit credentials and reject redirects. The acquisition interfaces remain undocumented external dependencies.
+
+Pure model/processing/document/export modules handle captions, selections, paragraphs, search, Markdown/templates and serialization. They cannot import browser/source modules; lint and package validation enforce this boundary. Source cue arrays remain separate from derived paragraphs. Reading-window pagination bounds DOM growth. Dedicated packaged compute workers perform search, preview/export generation and ZIP compression. XML parsing uses DOMParser in the foreground runner.
+
+IndexedDB has meta, documents and batches stores. A transactional runner lease uses owner UUID, increasing fencing token and expiry. Every result commit validates the current lease. The queue claim is persisted before network acquisition, and document/item completion are committed together. A durable cancellation flag rejects late commits; clear-data increments the lease token. Timers renew a foreground owner's lease, not the MV3 service worker. After interruption the next runner waits for explicit Resume and rediscovers signed references.
+
+Preferences use local extension storage and per-field validation. Unknown historical versions are backed up before loading compatible fields. React state is local to the UI; preferences synchronize through storage events. Temporary documents are revalidated before restoration.
+
+Build uses Vite for panel/settings/compute assets and separate background/content-script bundles. A second generated manifest omits sidePanel for tab fallback. All executable code is packaged. ZIP's synchronous encoder runs within our own packaged compute worker, avoiding fflate blob-worker creation under the restrictive CSP.
+
+Technology versions are pinned in package.json/package-lock.json. Development uses Node 24.22.0/npm 11.19.1. Browser checks run in isolated profiles. Tests and fixtures are separate from production modules.

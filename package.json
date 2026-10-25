@@ -1,0 +1,61 @@
+{
+  "name": "vextra",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "author": "ezequiel-gb",
+  "description": "Extract, read and export YouTube transcripts with a modern Chromium browser extension.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ezequiel-gb/vextra.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ezequiel-gb/vextra/issues"
+  },
+  "homepage": "https://github.com/ezequiel-gb/vextra#readme",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests scripts --max-warnings=0",
+    "test": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "build": "node scripts/build.mjs",
+    "validate:package": "node scripts/validate.mjs",
+    "test:browser": "node scripts/browser-test.mjs",
+    "test:live": "node scripts/live-test.mjs",
+    "package": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "fflate": "0.8.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-markdown": "10.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/adm-zip": "0.5.8",
+    "@types/chrome": "0.3.6",
+    "@types/node": "26.6.5",
+    "@types/pngjs": "6.0.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "adm-zip": "0.6.1",
+    "ajv": "8.20.0",
+    "eslint": "10.13.0",
+    "fake-indexeddb": "6.2.6",
+    "jsdom": "30.1.3",
+    "playwright": "1.64.1",
+    "pngjs": "7.0.0",
+    "prettier": "3.9.10",
+    "subtitle": "4.2.2",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

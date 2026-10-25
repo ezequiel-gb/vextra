@@ -1,0 +1,15 @@
+name: Feature request
+description: Suggest an improvement to Vextra.
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What would you like to do?
+      description: Describe the user need or workflow.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested approach
+      description: Share a concrete proposal or alternatives, if you have them.
