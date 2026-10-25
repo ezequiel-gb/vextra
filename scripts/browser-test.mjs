@@ -3,7 +3,10 @@ import { resolve } from "node:path";
 import { mkdir, writeFile, mkdtemp } from "node:fs/promises";
 import assert from "node:assert/strict";
 import { documentFixture } from "../tests/fixtures/document.ts";
-const extension = resolve("dist/chromium-panel");
+const variant = process.argv.includes("--tab")
+  ? "chromium-tab"
+  : "chromium-panel";
+const extension = resolve("dist", variant);
 await mkdir("artifacts", { recursive: true });
 const live = process.argv.includes("--live");
 const channel = process.argv.includes("--edge") ? "msedge" : "chromium";
@@ -220,6 +223,19 @@ try {
     await page.getByText("1 of 4 matches", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Next match", exact: true }).click();
     await page.getByText("2 of 4 matches", { exact: true }).waitFor();
+    for (const width of [320, 400, 600, 1200]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        true,
+        `Populated workspace overflows at ${width}px`,
+      );
+    }
+    results.push(
+      "Fixture-only: populated workspace fits 320/400/600/1200 CSS px",
+    );
     results.push(
       "Fixture-only: persisted document recovery, Markdown worker preview and complete search",
     );
@@ -288,11 +304,12 @@ try {
   assert.deepEqual(errors, []);
   results.push("No extension page runtime errors");
   await writeFile(
-    `artifacts/browser-results${live ? "-live" : ""}${process.argv.includes("--fixtures") ? "-fixtures" : ""}.json`,
+    `artifacts/browser-results-${channel}-${variant}${live ? "-live" : ""}${process.argv.includes("--fixtures") ? "-fixtures" : ""}.json`,
     JSON.stringify(
       {
         date: new Date().toISOString(),
         browser: context.browser()?.version(),
+        variant,
         results,
         errors,
         liveGate: live

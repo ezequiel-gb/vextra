@@ -1,5 +1,6 @@
 import type { Segment } from "../model/types.ts";
 import { array, object, string, VextraError } from "../model/errors.ts";
+import { limits } from "../model/limits.ts";
 
 interface RawCue {
   startMs: number;
@@ -10,7 +11,11 @@ export function parseCaptions(
   payload: string,
   durationMs?: number,
 ): { segments: Segment[]; warnings: string[] } {
-  if (payload.length > 25 * 1024 * 1024) throw new VextraError("LIMIT");
+  if (
+    payload.length > limits.responseBytes ||
+    new TextEncoder().encode(payload).byteLength > limits.responseBytes
+  )
+    throw new VextraError("CAPTION_SIZE_LIMIT");
   const raw: RawCue[] = [];
   const warnings: string[] = [];
   let skipped = 0;
@@ -19,6 +24,8 @@ export function parseCaptions(
       const root = object(JSON.parse(payload));
       if (!Array.isArray(root.events))
         throw new VextraError("UNSUPPORTED_CAPTION_FORMAT");
+      if (root.events.length > limits.captionCues)
+        throw new VextraError("CAPTION_CUE_LIMIT");
       for (const event of array(root.events)) {
         const e = object(event);
         const text = array(e.segs)
@@ -47,9 +54,11 @@ export function parseCaptions(
       const nodes = Array.from(
         xml.querySelectorAll(tag === "transcript" ? "text" : "body > p"),
       );
+      if (nodes.length > limits.captionCues)
+        throw new VextraError("CAPTION_CUE_LIMIT");
       for (const node of nodes) {
         if (node.querySelectorAll("*").length > 1000)
-          throw new VextraError("LIMIT");
+          throw new VextraError("CAPTION_MARKUP_LIMIT");
         node.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
         const seconds = tag === "transcript",
           start = node.getAttribute(seconds ? "start" : "t"),
@@ -68,10 +77,14 @@ export function parseCaptions(
   }
   const valid = raw.filter((c) => {
     const ok =
-      Number.isFinite(c.startMs) &&
+      Number.isSafeInteger(Math.round(c.startMs)) &&
       c.startMs >= 0 &&
       (c.durationMs === undefined ||
-        (Number.isFinite(c.durationMs) && c.durationMs > 0)) &&
+        (Number.isSafeInteger(Math.round(c.durationMs)) &&
+          c.durationMs > 0 &&
+          Number.isSafeInteger(
+            Math.round(c.startMs) + Math.round(c.durationMs),
+          ))) &&
       c.text.trim().length > 0;
     if (!ok) skipped++;
     return ok;
@@ -83,14 +96,21 @@ export function parseCaptions(
     const startMs = Math.round(c.startMs),
       inferred = c.durationMs === undefined;
     const end = valid[i + 1]?.startMs ?? durationMs ?? startMs + 1000;
-    if (inferred) warnings.push("TIMING_INFERRED");
+    const cueDuration = Math.max(
+      1,
+      Math.round(c.durationMs ?? (end > startMs ? end - startMs : 1000)),
+    );
+    if (
+      !Number.isSafeInteger(cueDuration) ||
+      !Number.isSafeInteger(startMs + cueDuration)
+    )
+      throw new VextraError("INVALID_CAPTIONS");
+    if (inferred && !warnings.includes("TIMING_INFERRED"))
+      warnings.push("TIMING_INFERRED");
     return {
       id: `cue-${i}`,
       startMs,
-      durationMs: Math.max(
-        1,
-        Math.round(c.durationMs ?? (end > startMs ? end - startMs : 1000)),
-      ),
+      durationMs: cueDuration,
       text: c.text
         .replace(/\r\n?/g, "\n")
         .split("\n")

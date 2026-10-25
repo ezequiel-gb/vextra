@@ -10,7 +10,7 @@ for (const [path, entry] of Object.entries(lock.packages)) {
   packages.push({ path, pkg });
 }
 out +=
-  "| Package | Version | Declared license |\n|---|---|---|\n" +
+  "| Package | Version | Declared licence |\n|---|---|---|\n" +
   packages
     .map(
       ({ pkg }) =>
@@ -23,14 +23,20 @@ for (const { path, pkg } of packages) {
   const licenses = (await readdir(path)).filter((name) =>
     /^(licen[cs]e|copying|notice)(\.|$)/i.test(name),
   );
+  let recorded = 0;
   for (const name of licenses)
     try {
       out += `### ${name}\n\n\`\`\`text\n${await readFile(join(path, name), "utf8")}\n\`\`\`\n\n`;
+      recorded++;
     } catch {
       /* Directory named license: package inventory still identifies its owner. */
     }
+  if (!recorded)
+    throw new Error(
+      `Missing redistribution notice for ${pkg.name} ${pkg.version}`,
+    );
 }
 await writeFile("THIRD-PARTY-NOTICES.md", out.trimEnd() + "\n");
 console.log(
-  `Recorded ${packages.length} production dependency license entries`,
+  `Recorded ${packages.length} production dependency licence entries`,
 );

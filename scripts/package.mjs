@@ -5,7 +5,10 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { zipSync, strToU8 } from "fflate";
 await mkdir("artifacts", { recursive: true });
+const { version } = JSON.parse(await readFile("package.json", "utf8"));
 const hashes = [];
+// ZIP stores local calendar fields, so use a fixed wall-clock value in every timezone.
+const archiveTime = new Date(2020, 0, 1, 0, 0, 0);
 for (const variant of ["chromium-panel", "chromium-tab"]) {
   const entries = {};
   const add = async (dir, prefix = "") => {
@@ -17,7 +20,7 @@ for (const variant of ["chromium-panel", "chromium-tab"]) {
       else
         entries[name] = [
           new Uint8Array(await readFile(join(dir, entry.name))),
-          { mtime: new Date("2020-01-01T00:00:00Z") },
+          { mtime: archiveTime },
         ];
     }
   };
@@ -35,7 +38,7 @@ for (const variant of ["chromium-panel", "chromium-tab"]) {
   ])
     entries[`docs/${name}`] = [
       new Uint8Array(await readFile(`docs/${name}`)),
-      { mtime: new Date("2020-01-01T00:00:00Z") },
+      { mtime: archiveTime },
     ];
   for (const name of [
     "README.md",
@@ -46,13 +49,13 @@ for (const variant of ["chromium-panel", "chromium-tab"]) {
   ])
     entries[name] = [
       strToU8(await readFile(name, "utf8")),
-      { mtime: new Date("2020-01-01T00:00:00Z") },
+      { mtime: archiveTime },
     ];
   const bytes = zipSync(entries, { level: 9 }),
     name =
       variant === "chromium-panel"
-        ? "Vextra-1.0.0-chromium.zip"
-        : `Vextra-1.0.0-${variant}.zip`;
+        ? `Vextra-${version}-chromium.zip`
+        : `Vextra-${version}-${variant}.zip`;
   await writeFile(`artifacts/${name}`, bytes);
   hashes.push(`${createHash("sha256").update(bytes).digest("hex")}  ${name}`);
 }
@@ -75,7 +78,7 @@ const sourceAdd = async (dir, prefix = "") => {
     else
       sourceEntries[name] = [
         new Uint8Array(await readFile(join(dir, entry.name))),
-        { mtime: new Date("2020-01-01T00:00:00Z") },
+        { mtime: archiveTime },
       ];
   }
 };
@@ -109,10 +112,10 @@ for (const name of [
 ])
   sourceEntries[name] = [
     new Uint8Array(await readFile(name)),
-    { mtime: new Date("2020-01-01T00:00:00Z") },
+    { mtime: archiveTime },
   ];
 const sourceBytes = zipSync(sourceEntries, { level: 9 }),
-  sourceName = "Vextra-1.0.0-source.zip";
+  sourceName = `Vextra-${version}-source.zip`;
 await writeFile(`artifacts/${sourceName}`, sourceBytes);
 hashes.push(
   `${createHash("sha256").update(sourceBytes).digest("hex")}  ${sourceName}`,

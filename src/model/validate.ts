@@ -1,5 +1,6 @@
 import type { Transcript } from "./types.ts";
 import { object, string, array, VextraError } from "./errors.ts";
+import { limits } from "./limits.ts";
 /** Revalidate persisted records; storage is data, not a trusted TypeScript producer. */
 export function validatedTranscript(raw: unknown): Transcript {
   const r = object(raw),
@@ -16,7 +17,7 @@ export function validatedTranscript(raw: unknown): Transcript {
     !Number.isFinite(Date.parse(String(r.extractedAt))) ||
     !Array.isArray(r.segments) ||
     r.segments.length === 0 ||
-    r.segments.length > 300000
+    r.segments.length > limits.captionCues
   )
     throw new VextraError("INVALID_CAPTIONS");
   const segments = array(r.segments).map((v) => {
@@ -28,7 +29,8 @@ export function validatedTranscript(raw: unknown): Transcript {
       !Number.isSafeInteger(s.startMs) ||
       Number(s.startMs) < 0 ||
       !Number.isSafeInteger(s.durationMs) ||
-      Number(s.durationMs) <= 0
+      Number(s.durationMs) <= 0 ||
+      !Number.isSafeInteger(Number(s.startMs) + Number(s.durationMs))
     )
       throw new VextraError("INVALID_CAPTIONS");
     return {

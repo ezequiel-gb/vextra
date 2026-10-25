@@ -1,5 +1,6 @@
 import { VextraError } from "../../model/errors.ts";
 import { hosts } from "./urls.ts";
+import { limits } from "../../model/limits.ts";
 
 export async function youtubeRequest(
   url: URL,
@@ -19,6 +20,7 @@ export async function youtubeRequest(
     const response = await fetch(url, {
       credentials: "omit",
       redirect: "error",
+      referrerPolicy: "no-referrer",
       signal: AbortSignal.any([signal, timeout]),
     });
     if (response.status === 429) {
@@ -38,8 +40,10 @@ export async function youtubeRequest(
       throw new VextraError(
         response.status >= 500 ? "NETWORK" : "VIDEO_UNAVAILABLE",
       );
-    if (Number(response.headers.get("content-length")) > 25 * 1024 * 1024)
-      throw new VextraError("LIMIT");
+    if (Number(response.headers.get("content-length")) > limits.responseBytes) {
+      await response.body?.cancel().catch(() => undefined);
+      throw new VextraError("RESPONSE_SIZE_LIMIT");
+    }
     const reader = response.body?.getReader();
     if (!reader) throw new VextraError("NETWORK");
     const decoder = new TextDecoder();
@@ -50,7 +54,8 @@ export async function youtubeRequest(
         const { done, value } = await reader.read();
         if (done) break;
         total += value.byteLength;
-        if (total > 25 * 1024 * 1024) throw new VextraError("LIMIT");
+        if (total > limits.responseBytes)
+          throw new VextraError("RESPONSE_SIZE_LIMIT");
         text += decoder.decode(value, { stream: true });
       }
       return text + decoder.decode();

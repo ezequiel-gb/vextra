@@ -7,17 +7,17 @@
 
 Vextra is an open-source Chromium browser extension for extracting, reading and exporting YouTube transcripts. Work with available captions as searchable text and structured documents, including Markdown, in a side panel designed for research and reference.
 
-**[Download Vextra v1.0.0](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.0/Vextra-1.0.0-chromium.zip)** · [Releases](https://github.com/ezequiel-gb/vextra/releases) · [Installation](#installation)
+**[Download Vextra v1.0.1](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.1/Vextra-1.0.1-chromium.zip)** · [Releases](https://github.com/ezequiel-gb/vextra/releases) · [Installation](#installation)
 
 ## Features
 
 - **Two source modes:** Current Video and From URL, with caption-language and caption-type selection.
 - **A focused reader:** original captions or clean paragraphs, full-document search, timestamp links and available chapters.
 - **Markdown documents:** Clean Reading, Research and Archive presets, metadata, optional timestamp references and custom templates.
-- **More export formats:** TXT, SRT, VTT and versioned JSON, plus copying and browser-managed downloads.
+- **Other export formats:** TXT, SRT, VTT and versioned JSON, plus copying and browser-managed downloads.
 - **Selective export:** the full transcript, time ranges, genuine chapters or selected passages.
 - **Batch workflows:** URL validation, duplicate removal, per-video results, retry, cancellation, recoverable queues and ZIP or combined Markdown export.
-- **Two considered themes:** white and light blue, or ash grey and charcoal, with a system-preference option.
+- **Light and dark themes:** white and light blue, or ash grey and charcoal, with a system-preference option.
 - **Local processing:** preferences, formatting and temporary recovery data stay in the extension's browser profile.
 
 ### Working with YouTube captions
@@ -58,14 +58,14 @@ Explore the source modes, transcript reader and Markdown workspace. These captur
 
 ## Installation
 
-Download **[Vextra-1.0.0-chromium.zip](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.0/Vextra-1.0.0-chromium.zip)** from [GitHub Releases](https://github.com/ezequiel-gb/vextra/releases).
+Download **[Vextra-1.0.1-chromium.zip](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.1/Vextra-1.0.1-chromium.zip)** from [GitHub Releases](https://github.com/ezequiel-gb/vextra/releases).
 
 Extract the ZIP into a permanent folder before installing. Select the extracted folder containing <code>manifest.json</code> directly, and keep it available afterward. GitHub's automatic **Source code** archives are for development; use the named Chromium release asset for installation.
 
 ### Brave
 
 1. Open [GitHub Releases](https://github.com/ezequiel-gb/vextra/releases).
-2. Download <code>Vextra-1.0.0-chromium.zip</code>.
+2. Download <code>Vextra-1.0.1-chromium.zip</code>.
 3. Extract it into a permanent folder on your computer.
 4. Open Brave.
 5. Enter <code>brave://extensions</code> in the address bar.
@@ -102,11 +102,13 @@ Extract the ZIP into a permanent folder before installing. Select the extracted 
 9. Pin Vextra from the Extensions menu if desired.
 10. Open a YouTube video and launch Vextra.
 
-Other compatible Chromium browsers use a similar extension-management interface. If a browser cannot support the side-panel manifest, use the [tab fallback ZIP](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.0/Vextra-1.0.0-chromium-tab.zip). See [installation details](docs/INSTALLATION.md) for compatibility notes.
+Other compatible Chromium browsers use a similar extension-management interface. If a browser cannot support the side-panel manifest, use the [tab fallback ZIP](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.1/Vextra-1.0.1-chromium-tab.zip). See [installation details](docs/INSTALLATION.md) for compatibility notes.
 
 ### Updating manually
 
 Download and extract the newer release. Replace the files in your existing permanent extension folder, open your browser's extensions manager and click **Reload** on Vextra. Refresh open YouTube pages and reopen Vextra. Keep any documents you want as downloaded files before updating.
+
+For download verification, see [SHA-256 integrity checks](docs/INSTALLATION.md#verify-download-integrity).
 
 ## How to use
 
@@ -116,7 +118,7 @@ Open a YouTube video and launch Vextra's side panel. Choose **Current Video**, t
 
 ### Extract from a URL
 
-Choose **From URL**, paste a supported YouTube link and find its caption languages. Select a track and extract. Standard watch links, short-host links, mobile links, Shorts and live-video URL forms are recognized. This mode uses public caption acquisition without automatically opening a source tab.
+Choose **From URL**, paste a supported YouTube link and find its caption languages. Select a track and extract. Standard watch links, short-host links, mobile links, Shorts and live-video URL forms are recognised. This mode uses public caption acquisition without automatically opening a source tab.
 
 ### Read and search
 
@@ -124,7 +126,7 @@ Switch between **Original captions** and **Clean Reading**. Show or hide timesta
 
 ### Export
 
-Choose a selection and Markdown preset, preview the document, then use **Copy**, **Download .md** or **More formats**. The primary download format can be changed in settings. SRT and VTT preserve original caption timing rather than reading paragraphs. See [the user guide](docs/USER-GUIDE.md) for time-range and passage-selection behavior.
+Choose a selection and Markdown preset, preview the document, then use **Copy**, **Download .md** or **Other export formats**. The primary download format can be changed in settings. SRT and VTT preserve original caption timing rather than reading paragraphs. See [the user guide](docs/USER-GUIDE.md) for time-range and passage-selection behaviour.
 
 ### Process a batch
 
@@ -156,13 +158,13 @@ Transcript text from the selected caption cues appears here.
 ## Notes
 ```
 
-Templates change presentation without summarizing or rewriting the speaker's words. Missing metadata is omitted. See [templates and export options](docs/USER-GUIDE.md#templates-and-settings) and the [JSON schema](docs/JSON-SCHEMA.md).
+Templates change presentation without summarising or rewriting the speaker's words. Missing metadata is omitted. See [templates and export options](docs/USER-GUIDE.md#templates-and-settings) and the [JSON schema](docs/JSON-SCHEMA.md).
 
 ## Privacy
 
 Vextra requires no Vextra account, subscription, paid API, separate processing server or mandatory AI service. Caption formatting, search and export happen locally. The extension communicates with YouTube to obtain video and caption information, and may load thumbnails from YouTube's image host.
 
-Preferences are stored locally; temporary transcripts and batches have retention limits and can be cleared. There is no application telemetry or advertising. YouTube's own access requirements and behavior still apply. Read [the privacy document](docs/PRIVACY.md) for permissions and retention details.
+Preferences are stored locally; temporary transcripts and batches have retention limits and can be cleared. There is no application telemetry or advertising. YouTube's own access requirements and behaviour still apply. Read [the privacy document](docs/PRIVACY.md) for permissions and retention details.
 
 ## Development
 
@@ -191,7 +193,7 @@ npm run test:browser -- --fixtures
 
 On Windows with Edge installed, add <code>--edge</code>. The browser suite covers document workflows; live caption probes are available through <code>npm run test:live</code> and <code>npm run test:browser -- --live</code>.
 
-Create release archives with <code>npm run package</code>. See [architecture](docs/ARCHITECTURE.md), [validation](docs/VALIDATION.md) and [contributor setup](CONTRIBUTING.md).
+Create release archives with <code>npm run package</code>; run <code>npm run test:reproducibility</code> to compare two builds and their release archives. Run <code>npm run check:docs</code> to validate local documentation links and <code>npm audit</code> to check dependency advisories. See [architecture](docs/ARCHITECTURE.md), [validation](docs/VALIDATION.md) and [contributor setup](CONTRIBUTING.md).
 
 ## Contributing
 

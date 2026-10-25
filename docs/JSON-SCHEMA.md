@@ -7,3 +7,5 @@ Exports include videoId, canonical sourceUrl, documentId, language, known captio
 Selection is `all`, a half-open cue-start `range` with startMs/endMs, `chapters` with chapterIds, or `passages` with segmentIds. Source order and original absolute times are retained; selecting a subrange does not rebase subtitles or JSON. Cue IDs are not renumbered after selection. Caption type is manual, automatic or unknown. Original parsed cues stay distinct from reading paragraphs; JSON does not replace them with inferred prose.
 
 Signed caption URLs, browser cookies, request headers, visitor/player request context and other acquisition references are excluded. Additional fields require a schema/version decision; consumers should inspect schemaVersion. This contract defines exported document structure and preserved caption timing.
+
+`NATIVE_PANEL_TIMING` identifies native-panel timestamps, whose precision may be lower than direct captions. `NATIVE_LANGUAGE_UNKNOWN` means the modern panel did not identify its language/type: `language` is `und` and `captionType` is `unknown`. Source text and timestamps remain available.

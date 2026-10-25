@@ -2,7 +2,7 @@
 
 Vextra is licensed under MIT; see LICENSE. This file inventories installed production dependencies and retains their available licence texts. Development-only tools are recorded in package-lock.json and are not bundled runtime dependencies. The original Vextra icon and interface assets are distributed under the project MIT Licence.
 
-| Package | Version | Declared license |
+| Package | Version | Declared licence |
 |---|---|---|
 | @types/debug | 4.1.13 | MIT |
 | @types/estree | 1.0.9 | MIT |

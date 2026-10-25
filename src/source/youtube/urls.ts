@@ -1,4 +1,5 @@
 import { VextraError } from "../../model/errors.ts";
+import { limits } from "../../model/limits.ts";
 export const hosts = new Set([
   "www.youtube.com",
   "youtube.com",
@@ -53,6 +54,8 @@ export function captionUrl(value: string): URL {
   return u;
 }
 export function batchInput(input: string) {
+  if (input.length > limits.batchCharacters)
+    throw new VextraError("BATCH_INPUT_LIMIT");
   const seen = new Set<string>();
   let duplicates = 0;
   const invalid: string[] = [];
@@ -64,12 +67,14 @@ export function batchInput(input: string) {
       else {
         seen.add(v.videoId);
         videos.push(v);
+        if (videos.length > limits.batchVideos)
+          throw new VextraError("BATCH_VIDEO_LIMIT");
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof VextraError && error.code === "BATCH_VIDEO_LIMIT")
+        throw error;
       invalid.push(token);
     }
   }
-  if (videos.length > 100 || input.length > 100_000)
-    throw new VextraError("LIMIT");
   return { videos, duplicates, invalid };
 }

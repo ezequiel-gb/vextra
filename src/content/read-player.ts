@@ -1,4 +1,4 @@
-/** Self-contained: Chrome serializes this function into the untrusted page world. */
+/** Self-contained: Chrome serialises this function into the untrusted page world. */
 export function readPlayer() {
   const w = window as unknown as {
     ytInitialPlayerResponse?: unknown;
@@ -25,5 +25,8 @@ export function readPlayer() {
     initial: { engagementPanels: w.ytInitialData?.engagementPanels },
   };
   const serialized = JSON.stringify(snapshot);
-  return serialized.length <= 3 * 1024 * 1024 ? snapshot : null;
+  return serialized.length <= 3 * 1024 * 1024 &&
+    new TextEncoder().encode(serialized).byteLength <= 3 * 1024 * 1024
+    ? snapshot
+    : null;
 }

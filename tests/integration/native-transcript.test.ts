@@ -81,3 +81,153 @@ it("rejects stale video identity without touching the page", async () => {
     await readNativeTranscript({ ...input, videoId: "abcdefghijk" }),
   ).toEqual({ error: "UNSUPPORTED_PAGE" });
 });
+
+function modernFixture() {
+  document.body.innerHTML =
+    '<ytd-engagement-panel-section-list-renderer><input aria-label="Search transcript"><transcript-segment-view-model></transcript-segment-view-model></ytd-engagement-panel-section-list-renderer>';
+  const items = [0, 12, 192].map((seconds, index) => ({
+    macroMarkersPanelItemViewModel: {
+      index,
+      panelId: "PAmodern_transcript_view",
+      item: {
+        timelineItemViewModel: {
+          contentItems: [
+            {
+              transcriptSegmentViewModel: {
+                simpleText: `Modern fixture passage ${index}.`,
+              },
+            },
+          ],
+        },
+      },
+      onTap: {
+        innertubeCommand: {
+          watchEndpoint: { videoId: input.videoId, startTimeSeconds: seconds },
+        },
+      },
+    },
+  }));
+  const panel = document.querySelector(
+    "ytd-engagement-panel-section-list-renderer",
+  ) as HTMLElement & { data: unknown };
+  panel.data = {
+    content: {
+      sectionListRenderer: {
+        contents: [{ itemSectionRenderer: { contents: items } }],
+      },
+    },
+  };
+  return items;
+}
+it("reads the complete modern model, including entries not mounted in the DOM", async () => {
+  modernFixture();
+  const task = readNativeTranscript({ ...input, singleTrack: true });
+  await vi.advanceTimersByTimeAsync(1500);
+  const result = await task;
+  expect(result.languageVerified).toBe(false);
+  expect(
+    JSON.parse(result.payload!).events.map(
+      (e: { tStartMs: number }) => e.tStartMs,
+    ),
+  ).toEqual([0, 12000, 192000]);
+});
+it("does not mistake a filtered modern panel for a full transcript", async () => {
+  modernFixture();
+  document.querySelector("input")!.value = "fixture";
+  expect(await readNativeTranscript({ ...input, singleTrack: true })).toEqual({
+    error: "NATIVE_FILTER_ACTIVE",
+  });
+});
+it("rejects missing modern indices and foreign-video entries", async () => {
+  const items = modernFixture();
+  items[1]!.macroMarkersPanelItemViewModel.index = 3;
+  expect(await readNativeTranscript({ ...input, singleTrack: true })).toEqual({
+    error: "NATIVE_TRANSCRIPT_UNAVAILABLE",
+  });
+  items[1]!.macroMarkersPanelItemViewModel.index = 1;
+  items[1]!.macroMarkersPanelItemViewModel.onTap.innertubeCommand.watchEndpoint.videoId =
+    "abcdefghijk";
+  expect(await readNativeTranscript({ ...input, singleTrack: true })).toEqual({
+    error: "NATIVE_TRANSCRIPT_UNAVAILABLE",
+  });
+});
+it("reads an unlabelled modern panel on a multilingual video without claiming the selected language", async () => {
+  modernFixture();
+  const task = readNativeTranscript({ ...input, singleTrack: false });
+  await vi.advanceTimersByTimeAsync(1500);
+  const result = await task;
+  expect(result.error).toBeUndefined();
+  expect(result.languageVerified).toBe(false);
+  expect(JSON.parse(result.payload!).events).toHaveLength(3);
+});
+it("counts chapter headers in the modern index sequence without treating them as captions", async () => {
+  const items = modernFixture();
+  for (const item of items) item.macroMarkersPanelItemViewModel.index++;
+  const header = (index: number, startTimeSeconds: number, title: string) => ({
+    macroMarkersPanelItemViewModel: {
+      index,
+      panelId: "PAmodern_transcript_view",
+      item: { timelineChapterViewModel: { title } },
+      onTap: {
+        innertubeCommand: {
+          watchEndpoint: { videoId: input.videoId, startTimeSeconds },
+        },
+      },
+    },
+  });
+  const last = structuredClone(items[0]!);
+  last.macroMarkersPanelItemViewModel.index = 5;
+  last.macroMarkersPanelItemViewModel.onTap.innertubeCommand.watchEndpoint.startTimeSeconds = 205;
+  const groups = [
+    {
+      itemSectionRenderer: {
+        header: header(0, 0, "First chapter"),
+        contents: items,
+      },
+    },
+    {
+      itemSectionRenderer: {
+        header: header(4, 200, "Second chapter"),
+        contents: [last],
+      },
+    },
+  ];
+  const panel = document.querySelector(
+    "ytd-engagement-panel-section-list-renderer",
+  ) as HTMLElement & { data: unknown };
+  panel.data = { content: { sectionListRenderer: { contents: groups } } };
+  const task = readNativeTranscript({ ...input, singleTrack: true });
+  await vi.advanceTimersByTimeAsync(1500);
+  const result = await task;
+  expect(
+    JSON.parse(result.payload!).events.map(
+      (e: { tStartMs: number }) => e.tStartMs,
+    ),
+  ).toEqual([0, 12000, 192000, 205000]);
+  expect(result.payload).not.toContain("First chapter");
+  groups[1]!.itemSectionRenderer.header.macroMarkersPanelItemViewModel.onTap.innertubeCommand.watchEndpoint.videoId =
+    "abcdefghijk";
+  expect(await readNativeTranscript({ ...input, singleTrack: true })).toEqual({
+    error: "NATIVE_TRANSCRIPT_UNAVAILABLE",
+  });
+});
+it("opens the modern panel through the normal Show transcript control", async () => {
+  document.body.innerHTML =
+    "<ytd-video-description-transcript-section-renderer><button>Show transcript</button></ytd-video-description-transcript-section-renderer>";
+  document.querySelector("button")!.addEventListener("click", modernFixture);
+  const task = readNativeTranscript({ ...input, singleTrack: true });
+  await vi.advanceTimersByTimeAsync(1800);
+  expect(JSON.parse((await task).payload!).events).toHaveLength(3);
+});
+it("rejects modern continuation records rather than returning partial success", async () => {
+  modernFixture();
+  const panel = document.querySelector(
+    "ytd-engagement-panel-section-list-renderer",
+  ) as HTMLElement & {
+    data: { content: { sectionListRenderer: { continuations?: unknown[] } } };
+  };
+  panel.data.content.sectionListRenderer.continuations = [{}];
+  expect(await readNativeTranscript({ ...input, singleTrack: true })).toEqual({
+    error: "NATIVE_TRANSCRIPT_UNAVAILABLE",
+  });
+});

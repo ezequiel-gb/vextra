@@ -1,6 +1,6 @@
 {
   "name": "vextra",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "license": "MIT",
   "author": "ezequiel-gb",
@@ -26,7 +26,9 @@
     "validate:package": "node scripts/validate.mjs",
     "test:browser": "node scripts/browser-test.mjs",
     "test:live": "node scripts/live-test.mjs",
-    "package": "node scripts/package.mjs"
+    "package": "node scripts/package.mjs",
+    "check:docs": "node scripts/check-docs.mjs",
+    "test:reproducibility": "node scripts/reproducibility.mjs"
   },
   "dependencies": {
     "fflate": "0.8.3",

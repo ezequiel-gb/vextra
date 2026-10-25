@@ -1,10 +1,42 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import assert from "node:assert/strict";
+const { version } = JSON.parse(await readFile("package.json", "utf8"));
 for (const variant of ["chromium-panel", "chromium-tab"]) {
   const dir = resolve("dist", variant),
     manifest = JSON.parse(await readFile(join(dir, "manifest.json"), "utf8"));
   assert.equal(manifest.manifest_version, 3);
+  assert.equal(manifest.version, version);
+  assert.equal(manifest.name, "Vextra");
+  assert.deepEqual(
+    [...manifest.permissions].sort(),
+    (variant === "chromium-panel"
+      ? ["storage", "scripting", "downloads", "sidePanel"]
+      : ["storage", "scripting", "downloads"]
+    ).sort(),
+  );
+  assert(!manifest.externally_connectable);
+  assert(!manifest.web_accessible_resources);
+  assert.deepEqual(
+    manifest.content_scripts[0].matches,
+    manifest.host_permissions,
+  );
+  const csp = manifest.content_security_policy.extension_pages;
+  for (const directive of [
+    "script-src 'self'",
+    "worker-src 'self'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "frame-src 'none'",
+    "form-action 'none'",
+  ])
+    assert(
+      csp
+        .split(";")
+        .map((s) => s.trim())
+        .includes(directive),
+      `Missing CSP directive: ${directive}`,
+    );
   const paths = [
     manifest.background.service_worker,
     manifest.options_ui.page,

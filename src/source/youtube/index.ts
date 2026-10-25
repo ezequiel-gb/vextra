@@ -87,14 +87,18 @@ export async function extract(
   }
   signal.throwIfAborted();
   let nativeUsed = false;
+  let languageVerified = true;
   if (!payload.trim() && tabId !== undefined) {
-    payload = await nativeTranscript(
+    const native = await nativeTranscript(
       tabId,
       d.videoId,
       track.displayName,
       track.captionType === "automatic",
       d.tracks.filter((t) => t.displayName === track!.displayName).length === 1,
+      d.tracks.length === 1,
     );
+    payload = native.payload;
+    languageVerified = native.languageVerified;
     nativeUsed = true;
     signal.throwIfAborted();
   }
@@ -105,6 +109,7 @@ export async function extract(
     throw new VextraError("CAPTION_ACCESS_REQUIRED");
   const parsed = parseCaptions(payload, d.durationMs);
   if (nativeUsed) parsed.warnings.push("NATIVE_PANEL_TIMING");
+  if (!languageVerified) parsed.warnings.push("NATIVE_LANGUAGE_UNKNOWN");
   return {
     schemaVersion: "1.0",
     documentId: crypto.randomUUID(),
@@ -113,8 +118,8 @@ export async function extract(
     title: d.title,
     channel: d.channel,
     durationMs: d.durationMs,
-    language: track.languageCode,
-    captionType: track.captionType,
+    language: languageVerified ? track.languageCode : "und",
+    captionType: languageVerified ? track.captionType : "unknown",
     trackId: track.id,
     chapters: d.chapters,
     extractedAt: new Date().toISOString(),

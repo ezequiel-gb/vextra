@@ -78,7 +78,7 @@ describe("discovery adapters", () => {
     ).toThrow("No accessible");
     expect(() =>
       discoveryFromHtml("<html>unexpected</html>", "abcdefghijk"),
-    ).toThrow("could not be recognized");
+    ).toThrow("could not be recognised");
     expect(() =>
       discoveryFrom(
         { ...player, playabilityStatus: { status: "LOGIN_REQUIRED" } },

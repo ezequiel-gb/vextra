@@ -177,7 +177,7 @@ export function Settings({
         </label>
         <p className="hint">
           Use {"{{title}}"}, {"{{videoId}}"} and {"{{channel}}"}. Filenames are
-          sanitized for Windows.
+          sanitised for Windows.
         </p>
         {checkbox("metadata", "Include available metadata")}
         {checkbox("timestamps", "Include export timestamps")}
@@ -231,11 +231,12 @@ export function Settings({
           Placeholders: title, channel, url, duration, language, extracted_date,
           chapters, transcript, notes, each inside double braces. Chapters
           inserts an index; transcript inserts the selected formatted content.
-          No expressions or HTML execution.
+          Placeholders insert text; they do not run code. Raw HTML is hidden in
+          the preview.
         </p>
         <div className="row wrap">
           <button onClick={saveTemplate}>
-            {editing ? "Save & rename" : "Create template"}
+            {editing ? "Save template" : "Create template"}
           </button>
           <button
             onClick={() => {
@@ -259,7 +260,7 @@ export function Settings({
               setBody(builtinBody);
             }}
           >
-            Delete custom
+            Delete template
           </button>
           <button
             onClick={() => {
@@ -268,7 +269,7 @@ export function Settings({
               setBody(builtinBody);
             }}
           >
-            Restore default editor
+            Reset template editor
           </button>
         </div>
         <p className="hint">
@@ -281,10 +282,12 @@ export function Settings({
         <legend>Privacy and data</legend>
         {checkbox("retain", "Retain completed transcripts temporarily")}
         <p className="hint">
-          Single transcripts expire after 24 hours. Batch recovery expires after
-          7 days, including unfinished batches. Keep the panel or a Vextra tab
-          open while processing. No accounts, telemetry or external processing
-          servers.
+          Retained single transcripts expire after 24 hours; batch recovery
+          expires after 7 days. With retention off, single transcripts stay in
+          the open workspace. Batch outputs are stored until the next cleanup
+          after processing stops. Expired records are removed when Vextra next
+          starts or cleans its storage. Keep a Vextra panel or tab open while
+          processing.
         </p>
         <div className="row wrap">
           <button
@@ -298,9 +301,9 @@ export function Settings({
           </button>
           <button
             onClick={() => {
-              onClear();
               void clearData()
                 .then(() => {
+                  onClear();
                   setUsage(0);
                   setMessage("Temporary transcripts and batches cleared.");
                 })
@@ -331,11 +334,14 @@ export function Settings({
       </fieldset>
       <fieldset>
         <legend>About Vextra</legend>
-        <p>Vextra 1.0.0 · Local-first YouTube transcript documents.</p>
+        <p>
+          Vextra {chrome.runtime.getManifest().version} · Local-first YouTube
+          transcript documents.
+        </p>
         <p>
           Captions must be accessible from YouTube. Vextra cannot transcribe
-          audio, unlock restricted videos or guarantee YouTube’s undocumented
-          interfaces.
+          audio or unlock restricted videos. Caption availability depends on
+          YouTube.
         </p>
         <p className="hint">
           Vextra is released under the MIT Licence. Bundled dependency notices

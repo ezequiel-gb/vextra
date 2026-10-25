@@ -13,5 +13,9 @@ export default defineConfig({
     },
   },
   worker: { format: "es" },
-  test: { environment: "jsdom", globals: true },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    include: ["tests/**/*.test.{ts,tsx}"],
+  },
 } as Parameters<typeof defineConfig>[0]);

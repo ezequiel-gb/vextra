@@ -1,6 +1,7 @@
 import { exportText } from "../export/formats.ts";
 import { archive, combinedMarkdown } from "../export/batch.ts";
 import { searchDocument } from "../processing/text.ts";
+import { VextraError } from "../model/errors.ts";
 import type {
   Format,
   Selection,
@@ -41,6 +42,7 @@ self.onmessage = async (e: MessageEvent<ComputeRequest>) => {
     self.postMessage({
       id: m.id,
       error: error instanceof Error ? error.message : "Processing failed.",
+      code: error instanceof VextraError ? error.code : undefined,
     });
   }
 };

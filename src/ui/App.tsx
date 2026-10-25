@@ -6,7 +6,7 @@ import type {
   Settings as Preferences,
   Transcript,
 } from "../model/types.ts";
-import { errorText, VextraError } from "../model/errors.ts";
+import { errorText, VextraError, captionWarningText } from "../model/errors.ts";
 import { discover, extract, chooseTrack } from "../source/youtube/index.ts";
 import { batchInput } from "../source/youtube/urls.ts";
 import {
@@ -68,6 +68,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
   const controller = useRef<AbortController | undefined>(undefined),
     generation = useRef(0),
     sourceGeneration = useRef(0),
+    workspaceEpoch = useRef(0),
     discoveryTab = useRef<number | undefined>(undefined);
   const updateSettings = useCallback((s: Preferences) => {
     setSettings(s);
@@ -115,6 +116,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
     const channel = new BroadcastChannel("vextra-data");
     channel.onmessage = (event: MessageEvent<{ cleared?: boolean }>) => {
       if (event.data?.cleared) {
+        workspaceEpoch.current++;
         generation.current++;
         controller.current?.abort();
         setDoc(undefined);
@@ -128,6 +130,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
       }
     };
     return () => {
+      workspaceEpoch.current++;
       channel.close();
       controller.current?.abort();
       chrome.tabs.onActivated.removeListener(tabsChanged);
@@ -370,6 +373,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
   }, [doc, settings, selectionInfo.selection, previewOpen]);
   const exportDocument = async (format: Format, copy = false) => {
     if (!doc || !selectionInfo.selection) return;
+    const epoch = workspaceEpoch.current;
     setError("");
     setStatus("Preparing document…");
     try {
@@ -380,11 +384,13 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
         settings,
         format,
       });
+      if (epoch !== workspaceEpoch.current) return;
       if (copy) {
         try {
           await navigator.clipboard.writeText(output);
           setStatus("Document copied.");
         } catch {
+          if (epoch !== workspaceEpoch.current) return;
           setCopyFallback(output);
           setStatus(
             "Clipboard unavailable. Select and copy the document below.",
@@ -403,6 +409,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
   };
   const batchExport = async (kind: "zip" | "combined") => {
     if (!batch) return;
+    const epoch = workspaceEpoch.current;
     setError("");
     setStatus("Preparing batch export…");
     try {
@@ -413,6 +420,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
             .map((i) => getDocument(i.documentId!)),
         )
       ).filter((d): d is Transcript => Boolean(d));
+      if (epoch !== workspaceEpoch.current) return;
       if (!docs.length) throw new VextraError("EMPTY_TRANSCRIPT");
       if (kind === "zip") {
         const bytes = await compute<Uint8Array>({
@@ -422,6 +430,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
           format: settings.format,
           statuses: batch.items,
         });
+        if (epoch !== workspaceEpoch.current) return;
         await downloadBlob(
           new Blob([new Uint8Array(bytes).buffer], { type: "application/zip" }),
           "Vextra-batch.zip",
@@ -433,6 +442,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
           settings,
           total: batch.items.length,
         });
+        if (epoch !== workspaceEpoch.current) return;
         await downloadBlob(
           new Blob([output], { type: "text/markdown;charset=utf-8" }),
           "Vextra-batch.md",
@@ -444,6 +454,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
     }
   };
   const clearWorkspace = () => {
+    workspaceEpoch.current++;
     generation.current++;
     controller.current?.abort();
     setBusy(false);
@@ -451,6 +462,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
     setBatch(undefined);
     setPreview("");
     setCopyFallback("");
+    setStatus("Temporary transcripts and batches cleared.");
   };
 
   return (
@@ -654,7 +666,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
           ) : (
             <section className="card">
               <div className="eyebrow">01 / BATCH</div>
-              <h2>Build your reading queue</h2>
+              <h2>Batch transcripts</h2>
               <label>
                 YouTube URLs
                 <textarea
@@ -677,7 +689,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
               )}
               {batchValidation.invalid.map((v, i) => (
                 <p className="hint" key={i}>
-                  Unrecognized URL: {v}
+                  Unrecognised URL: {v}
                 </p>
               ))}
               <ul className="queue-input">
@@ -742,7 +754,9 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
                     </button>
                     <button
                       onClick={() => {
-                        void openExpanded();
+                        void openExpanded().catch((e) =>
+                          setError(errorText(e)),
+                        );
                       }}
                     >
                       Continue in tab
@@ -769,25 +783,33 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
                           <div className="row">
                             <button
                               onClick={() => {
-                                void getDocument(item.documentId!).then((d) => {
-                                  if (d) {
-                                    setDoc(d);
-                                    setStatus(
-                                      "Completed batch transcript opened.",
-                                    );
-                                  } else
-                                    setError(
-                                      "This temporary transcript has expired.",
-                                    );
-                                });
+                                const epoch = workspaceEpoch.current;
+                                void getDocument(item.documentId!)
+                                  .then((d) => {
+                                    if (epoch !== workspaceEpoch.current)
+                                      return;
+                                    if (d) {
+                                      setDoc(d);
+                                      setStatus(
+                                        "Completed batch transcript opened.",
+                                      );
+                                    } else
+                                      setError(
+                                        "This temporary transcript has expired.",
+                                      );
+                                  })
+                                  .catch((e) => setError(errorText(e)));
                               }}
                             >
                               Read & export
                             </button>
                             <button
                               onClick={() => {
+                                const epoch = workspaceEpoch.current;
                                 void getDocument(item.documentId!)
                                   .then(async (d) => {
+                                    if (epoch !== workspaceEpoch.current)
+                                      return;
                                     if (!d)
                                       throw new VextraError("EMPTY_TRANSCRIPT");
                                     const text = await compute<string>({
@@ -797,6 +819,8 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
                                       selection: { kind: "all" },
                                       format: settings.format,
                                     });
+                                    if (epoch !== workspaceEpoch.current)
+                                      return;
                                     await downloadBlob(
                                       new Blob([text], {
                                         type: mime[settings.format],
@@ -850,15 +874,18 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
                 <div className="eyebrow">02 / TRANSCRIPT</div>
                 <h2 dir="auto">{doc.title ?? "Transcript"}</h2>
                 <p className="hint">
-                  {doc.language} · {doc.captionType} ·{" "}
-                  {doc.segments.length.toLocaleString()} cues
+                  {doc.language === "und"
+                    ? "Language not identified"
+                    : doc.language}{" "}
+                  · {doc.captionType} · {doc.segments.length.toLocaleString()}{" "}
+                  cues
                 </p>
                 {doc.warnings.length > 0 && (
                   <details>
-                    <summary>Caption timing and normalization warnings</summary>
+                    <summary>Caption timing and formatting notes</summary>
                     <ul>
                       {doc.warnings.map((w) => (
-                        <li key={w}>{w}</li>
+                        <li key={w}>{captionWarningText(w)}</li>
                       ))}
                     </ul>
                   </details>
@@ -874,7 +901,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
               </section>
               <section className="card export-options">
                 <div className="eyebrow">03 / DOCUMENT</div>
-                <h2>Make it yours</h2>
+                <h2>Export options</h2>
                 <label>
                   Export selection
                   <select
@@ -1025,12 +1052,9 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
               <span className="empty-mark" aria-hidden="true">
                 ≡
               </span>
-              <h2>
-                A video worth keeping.
-                <br />A document worth reading.
-              </h2>
+              <h2>Turn captions into documents.</h2>
               <p>
-                Accurate captions. Clean paragraphs.
+                Read and export available YouTube captions.
                 <br />
                 Your research, on your device.
               </p>
@@ -1077,7 +1101,7 @@ export function App({ initialSettings }: { initialSettings: Preferences }) {
             Download .{settings.format}
           </button>
           <details className="formats">
-            <summary>More formats</summary>
+            <summary>Other export formats</summary>
             <div>
               {(["md", "txt", "srt", "vtt", "json"] as const).map((f) => (
                 <button

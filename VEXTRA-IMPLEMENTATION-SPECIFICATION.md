@@ -2,6 +2,8 @@
 
 Prepared 24 October 2026 from the supplied Comprehensive Product Brief.
 
+**Status:** historical design specification. It records the original requirements and proposed architecture; it is not a statement of current implementation or completed verification. See [architecture](docs/ARCHITECTURE.md), [development checks](docs/VALIDATION.md) and [caption compatibility](docs/LIMITATIONS.md) for current guidance.
+
 **Purpose:** technical requirements and architectural reference for Vextra 1.0. Numeric limits and algorithms below are engineering defaults that may be adjusted with recorded evidence while retaining the product requirements.
 
 ## 1. Assignment and release boundaries
@@ -12,24 +14,24 @@ Preserve all initial-release functionality: active-video and pasted-URL extracti
 
 Do not add accounts, analytics, advertising, mandatory AI, translation, paid APIs, a developer backend, speech recognition, video/audio downloading, a permanent research library, annotations or playlist extraction. A notes placeholder in a document template is permitted; a persistent notes application is future scope. Extraction success must always mean a validated, nonempty timed transcript was obtained.
 
-Implement working behavior at each milestone. Fixtures belong in tests or an explicitly labeled development harness, never in production extraction paths. Do not expose a control whose only behavior is a placeholder message. Release acceptance covers the required features and browser checks defined below.
+Implement working behaviour at each milestone. Fixtures belong in tests or an explicitly labelled development harness, never in production extraction paths. Do not expose a control whose only behaviour is a placeholder message. Release acceptance covers the required features and browser checks defined below.
 
 ## 2. Technology decisions
 
-| Area | Choice | Reason |
-|---|---|---|
-| Language | TypeScript, strict mode; `noUncheckedIndexedAccess` | Shared contracts and safe handling of incomplete external data |
-| UI | React with hooks and a reducer; semantic HTML and CSS custom properties | Suitable for interacting transcript, preview, selection and batch state without a large application framework |
-| Build | Vite multipage build plus a small extension packaging script | Deterministic paths for panel, settings, background worker and packaged scripts |
-| Browser types | `@types/chrome`; small internal API adapter | Chromium target does not justify a large compatibility framework |
-| Parsing | JSON parser, browser `DOMParser` in the runner context, validated adapters | No evaluation of YouTube page scripts |
-| Markdown preview | `react-markdown`, raw HTML disabled, explicit link/image policy | Render a safe component tree rather than inserting HTML |
-| ZIP | `fflate`, bundled, asynchronous worker operation | Browser-only ZIP creation without a server |
-| Preferences | `chrome.storage.local` | Local extension settings without cloud synchronization |
-| Large/recoverable data | IndexedDB through a small repository layer | Transactional batch recovery and temporary document storage |
-| Background computation | Packaged dedicated Web Worker | Parsing/formatting/search/ZIP work stays off the UI thread where practical |
-| Unit/integration tests | Vitest, Testing Library, checked-in sanitized fixtures | Fast deterministic core and UI verification |
-| Browser automation | Playwright persistent Chromium profiles where supported; manual branded-browser checks | Tests the installed MV3 build, not just a webpage imitation |
+| Area                   | Choice                                                                                 | Reason                                                                                                        |
+| ---------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Language               | TypeScript, strict mode; `noUncheckedIndexedAccess`                                    | Shared contracts and safe handling of incomplete external data                                                |
+| UI                     | React with hooks and a reducer; semantic HTML and CSS custom properties                | Suitable for interacting transcript, preview, selection and batch state without a large application framework |
+| Build                  | Vite multipage build plus a small extension packaging script                           | Deterministic paths for panel, settings, background worker and packaged scripts                               |
+| Browser types          | `@types/chrome`; small internal API adapter                                            | Chromium target does not justify a large compatibility framework                                              |
+| Parsing                | JSON parser, browser `DOMParser` in the runner context, validated adapters             | No evaluation of YouTube page scripts                                                                         |
+| Markdown preview       | `react-markdown`, raw HTML disabled, explicit link/image policy                        | Render a safe component tree rather than inserting HTML                                                       |
+| ZIP                    | `fflate`, bundled, asynchronous worker operation                                       | Browser-only ZIP creation without a server                                                                    |
+| Preferences            | `chrome.storage.local`                                                                 | Local extension settings without cloud synchronisation                                                        |
+| Large/recoverable data | IndexedDB through a small repository layer                                             | Transactional batch recovery and temporary document storage                                                   |
+| Background computation | Packaged dedicated Web Worker                                                          | Parsing/formatting/search/ZIP work stays off the UI thread where practical                                    |
+| Unit/integration tests | Vitest, Testing Library, checked-in sanitised fixtures                                 | Fast deterministic core and UI verification                                                                   |
+| Browser automation     | Playwright persistent Chromium profiles where supported; manual branded-browser checks | Tests the installed MV3 build, not just a webpage imitation                                                   |
 
 At implementation time select supported stable dependency versions and a supported Node.js LTS development version, record them in `package.json`, a lockfile and an engines/runtime file, and document the rationale. Pin dependency versions and record minimum browser versions with supporting compatibility checks. Use one package and npm unless repository evidence justifies another choice. Runtime users need only the browser.
 
@@ -70,13 +72,12 @@ vextra/
   tests/
     unit/
     integration/
-    fixtures/                  # sanitized captures; provenance and expected output
+    fixtures/                  # sanitised captures; provenance and expected output
     browser/
   scripts/                     # manifest generation, icons, packaging, validation
   docs/
     ARCHITECTURE.md
-    EXTRACTION-VALIDATION.md
-    TEST-MATRIX.md
+    VALIDATION.md
     INSTALLATION.md
     USER-GUIDE.md
     PRIVACY.md
@@ -95,7 +96,7 @@ vextra/
 
 Use the panel or expanded extension tab as the foreground task runner. Keep the service worker small: register listeners synchronously, handle toolbar actions, mediate privileged injection, and expose capability information. Do not place the batch loop, document parsing or Blob URL lifetime in the service worker.
 
-Chrome documents that `sidePanel.open()` requires a user action. Open directly from the toolbar listener before unrelated asynchronous work can consume that gesture; use `setPanelBehavior` only if its behavior is verified in the target browser. Avoid a default popup that suppresses the toolbar listener. [Chrome Side Panel API](https://developer.chrome.com/docs/extensions/reference/api/sidePanel)
+Chrome documents that `sidePanel.open()` requires a user action. Open directly from the toolbar listener before unrelated asynchronous work can consume that gesture; use `setPanelBehavior` only if its behaviour is verified in the target browser. Avoid a default popup that suppresses the toolbar listener. [Chrome Side Panel API](https://developer.chrome.com/docs/extensions/reference/api/sidePanel)
 
 Illustrative panel manifest, to be generated and tested rather than copied without validation:
 
@@ -111,26 +112,34 @@ Illustrative panel manifest, to be generated and tested rather than copied witho
     "https://m.youtube.com/*",
     "https://youtube.com/*"
   ],
-  "background": {"service_worker": "background.js", "type": "module"},
-  "action": {"default_title": "Open Vextra"},
-  "side_panel": {"default_path": "panel.html"},
-  "options_ui": {"page": "settings.html", "open_in_tab": true},
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_title": "Open Vextra" },
+  "side_panel": { "default_path": "panel.html" },
+  "options_ui": { "page": "settings.html", "open_in_tab": true },
   "icons": {
-    "16": "icons/16.png", "32": "icons/32.png",
-    "48": "icons/48.png", "128": "icons/128.png"
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
   },
-  "content_scripts": [{
-    "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*", "https://youtube.com/*"],
-    "js": ["navigation.js"],
-    "run_at": "document_idle"
-  }],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*",
+        "https://youtube.com/*"
+      ],
+      "js": ["navigation.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "content_security_policy": {
     "extension_pages": "default-src 'self'; script-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-src 'none'; connect-src https://www.youtube.com https://m.youtube.com https://youtube.com; img-src 'self' data: https://i.ytimg.com; style-src 'self'"
   }
 }
 ```
 
-The tab compatibility manifest omits `sidePanel` permission and `side_panel`, retaining the same application assets. Its toolbar action focuses or opens `panel.html` as an extension tab. Try the shared panel build first; supply the tab variant where manifest acceptance or panel behavior fails. These are generated manifest variations, not divergent application implementations.
+The tab compatibility manifest omits `sidePanel` permission and `side_panel`, retaining the same application assets. Its toolbar action focuses or opens `panel.html` as an extension tab. Try the shared panel build first; supply the tab variant where manifest acceptance or panel behaviour fails. These are generated manifest variations, not divergent application implementations.
 
 Feature-detect APIs and catch operational rejection. Never equate an existing API property with functional support. Include an “Open in tab” command in panel builds. Show a close button only when the host supplies a tested close mechanism. Microsoft documents its sidebar support through `chrome.sidePanel`; Brave, Vivaldi, Opera and specific releases still require direct verification. [Microsoft Edge sidebar documentation](https://learn.microsoft.com/en-us/microsoft-edge/extensions/developer-guide/sidebar)
 
@@ -147,10 +156,10 @@ type CaptionType = "manual" | "automatic" | "unknown";
 type CaptionFormat = "json3" | "srv3" | "xml" | "vtt";
 
 interface TranscriptSegment {
-  id: string;                  // stable within a document
-  startMs: number;             // finite, integer, >= 0
-  durationMs: number;          // finite, integer, > 0
-  text: string;               // decoded plain text; no executable markup
+  id: string; // stable within a document
+  startMs: number; // finite, integer, >= 0
+  durationMs: number; // finite, integer, > 0
+  text: string; // decoded plain text; no executable markup
   timingInferred?: boolean;
 }
 
@@ -196,8 +205,8 @@ interface TranscriptDocument {
   trackId: string;
   segments: readonly TranscriptSegment[];
   chapters: readonly TranscriptChapter[];
-  extractedAt: string;         // ISO 8601 UTC
-  warnings: string[];          // controlled warning codes
+  extractedAt: string; // ISO 8601 UTC
+  warnings: string[]; // controlled warning codes
 }
 
 type Selection =
@@ -215,8 +224,15 @@ interface Paragraph {
 }
 
 interface SourceAdapter {
-  discover(input: { videoId: string; tabId?: number }, signal: AbortSignal): Promise<VideoDiscovery>;
-  fetchTrack(discovery: VideoDiscovery, trackId: string, signal: AbortSignal): Promise<{
+  discover(
+    input: { videoId: string; tabId?: number },
+    signal: AbortSignal,
+  ): Promise<VideoDiscovery>;
+  fetchTrack(
+    discovery: VideoDiscovery,
+    trackId: string,
+    signal: AbortSignal,
+  ): Promise<{
     format: CaptionFormat;
     payload: string;
   }>;
@@ -235,13 +251,13 @@ The official YouTube Data API caption-download endpoint requires authorization a
 
 Public web-client extraction is an undocumented dependency. The maintainer of `youtube-transcript-api` explicitly warns that its underlying interface may break and reports blocked requests; that project provides context for designing and maintaining browser-native MV3 adapters. Do not add Python, proxy services or that package as a runtime dependency. [Maintainer documentation](https://github.com/jdepoix/youtube-transcript-api)
 
-Create `docs/EXTRACTION-VALIDATION.md` with date, OS, browser/version, extension build hash, test video IDs, caption languages/types, signed-in/out state, region where relevant, adapter attempted, result and sanitized failure category. Do not include cookies, authentication headers, signed caption URLs or private data.
+Record live-check evidence under the ignored `artifacts/` directory, following [docs/VALIDATION.md](docs/VALIDATION.md), with date, OS, browser/version, extension build hash, test video IDs, caption languages/types, signed-in/out state, region where relevant, adapter attempted, result and sanitised failure category. Do not include cookies, authentication headers, signed caption URLs or private data.
 
 Validate at least six distinct accessible public videos, including manual captions, automatic captions, multiple languages, one long recording and Shorts/live URL forms where an archived captioned example exists. Separately exercise no-caption, unavailable/restricted and network-failure cases. Confirm both current-page acquisition and pasted URL acquisition for each applicable positive case. A video that becomes unavailable must be recorded and replaced transparently, not silently removed from the report.
 
 The pasted URL gate must pass from an unrelated active tab without asking the user to navigate to the target video. Success obtained only after manual target-page navigation does not satisfy that workflow. If a browser-native acquisition route cannot satisfy this, record the exact limitation and keep the release gate open. Do not substitute mock transcripts or advertise complete URL support.
 
-No hardcoded client identity, player response field, endpoint or query flag may be labeled stable merely because it works once. A network request returning HTTP 200 is insufficient: validate video identity, selected track, timing and nonempty transcript content.
+No hardcoded client identity, player response field, endpoint or query flag may be labelled stable merely because it works once. A network request returning HTTP 200 is insufficient: validate video identity, selected track, timing and nonempty transcript content.
 
 ## 7. Source acquisition strategies
 
@@ -268,9 +284,9 @@ The page environment is untrusted even when the injected code is packaged. Valid
 
 Fetch the canonical public watch page from the extension runner using `credentials: "omit"` initially. Treat consent pages, sign-in interstitials, bot challenges and restricted responses as distinct unsupported/access states rather than malformed transcripts.
 
-Extract known embedded JSON objects with an isolated, bounded parser that understands quoted strings, escapes and balanced delimiters. Never use `eval`, `Function`, remotely supplied JavaScript or a regular expression that assumes an entire nested JSON object fits a simple capture. Runtime-validate all candidate objects and their video IDs. Keep page/player and any transcript endpoint schemas in separate adapters with sanitized captures.
+Extract known embedded JSON objects with an isolated, bounded parser that understands quoted strings, escapes and balanced delimiters. Never use `eval`, `Function`, remotely supplied JavaScript or a regular expression that assumes an entire nested JSON object fits a simple capture. Runtime-validate all candidate objects and their video IDs. Keep page/player and any transcript endpoint schemas in separate adapters with sanitised captures.
 
-An alternate YouTube web-client metadata/transcript request may be implemented only after browser validation demonstrates necessity and reliability. Document exact context fields, provenance, credential behavior and response schema. Never scrape credentials, spoof privileged clients, solve challenges, or retrieve remotely executable player code. Restriction/challenge/token requirements that the implementation cannot meet produce a truthful failure.
+An alternate YouTube web-client metadata/transcript request may be implemented only after browser validation demonstrates necessity and reliability. Document exact context fields, provenance, credential behaviour and response schema. Never scrape credentials, spoof privileged clients, solve challenges, or retrieve remotely executable player code. Restriction/challenge/token requirements that the implementation cannot meet produce a truthful failure.
 
 If testing shows public watch retrieval alone is insufficient, a temporary inactive YouTube tab may be evaluated as a documented fallback: no manual user navigation, no playback, one tab at a time, show status, persist its owned tab ID, and close only tabs created by Vextra. It must pass the same privacy, cleanup, cancellation and browser tests. Enable the fallback with documented privacy, cleanup and browser checks; create source tabs only during a user-requested operation.
 
@@ -288,7 +304,7 @@ No-caption-track and inaccessible-track failures are different. A changed discov
 
 Support observed JSON3, legacy XML transcript and SRV3 representations through distinct parsers. Add VTT input only with a parser fixture if it is encountered by the acquisition strategy. Unsupported formats produce a parsing error. Reject XML parser errors, document types/external entities, excessive nesting and oversized inputs.
 
-JSON3 parsing must account for text-bearing events, nested text segments, offsets and non-text events. SRV3 parsing must account for timed paragraphs, nested spans and recognized line breaks. Decode XML entities through the XML parser; do not decode an already decoded string twice. For plain JSON text, preserve literal entity-looking text unless the format explicitly specifies encoding. Preserve Unicode, bidirectional text, punctuation and meaningful line breaks; normalize CRLF and insignificant spacing without inserting missing punctuation.
+JSON3 parsing must account for text-bearing events, nested text segments, offsets and non-text events. SRV3 parsing must account for timed paragraphs, nested spans and recognised line breaks. Decode XML entities through the XML parser; do not decode an already decoded string twice. For plain JSON text, preserve literal entity-looking text unless the format explicitly specifies encoding. Preserve Unicode, bidirectional text, punctuation and meaningful line breaks; normalize CRLF and insignificant spacing without inserting missing punctuation.
 
 Assign stable cue IDs, validate finite times and convert to integer milliseconds. Missing duration may be inferred from the next cue; a last cue may use known video duration or a documented 1-second fallback. Mark every inferred timing. Reject or skip malformed individual events with a recorded count; if there is no valid nonempty segment, fail. Stable-sort out-of-order cues for the timed model and record that repair. Never silently clamp an out-of-bounds cue into unrelated content. Display a warning when repairs materially affect timing.
 
@@ -312,12 +328,12 @@ Search uses a complete-document plain-text index, with offsets mapped back to pa
 
 Use one explicit export-selection mode at a time:
 
-| Mode | Deterministic behavior |
-|---|---|
-| Full | All nonempty source cues |
+| Mode       | Deterministic behaviour                                                                                    |
+| ---------- | ---------------------------------------------------------------------------------------------------------- |
+| Full       | All nonempty source cues                                                                                   |
 | Time range | Parse `hh:mm:ss[.mmm]` or `mm:ss[.mmm]`; require finite `0 <= start < end`, with end within known duration |
-| Chapters | Union of selected chapter intervals; each cue included once |
-| Passages | Explicit whole-cue checkbox/range selection, also reachable from Clean Reading via source mappings |
+| Chapters   | Union of selected chapter intervals; each cue included once                                                |
+| Passages   | Explicit whole-cue checkbox/range selection, also reachable from Clean Reading via source mappings         |
 
 For range/chapter selection, include cues whose start is in the half-open interval `[start,end)`. Show that boundary rule in concise help text so partial crossing cues are predictable. Preserve complete text and original absolute timing; do not pretend to cut words at a timestamp. A cue that starts before the interval is excluded. Reject empty selections with a useful message. Do not approximate arbitrary text highlights as precisely timed subtitles. Preview and export must use the same resolved selection snapshot; show count and first/last selected cue time.
 
@@ -339,16 +355,16 @@ Render Markdown safely with raw HTML disabled. Restrict links to HTTPS YouTube s
 
 ### 10.2 Other formats
 
-| Format | Requirements |
-|---|---|
-| TXT | UTF-8 text, selected clean or verbatim content, optional metadata/plain timestamps, no Markdown escaping artifacts |
-| SRT | Original selected cues, sequential numbers, `HH:MM:SS,mmm --> HH:MM:SS,mmm`, blank line between cues, positive duration |
-| VTT | `WEBVTT` header and blank line, original selected cues, `HH:MM:SS.mmm` times, escaped cue markup where necessary |
-| JSON | `schemaVersion: "1.0"`, documented document fields, selected source segments, relevant original chapters, selection descriptor and timing warnings; no acquisition secrets |
+| Format | Requirements                                                                                                                                                               |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TXT    | UTF-8 text, selected clean or verbatim content, optional metadata/plain timestamps, no Markdown escaping artifacts                                                         |
+| SRT    | Original selected cues, sequential numbers, `HH:MM:SS,mmm --> HH:MM:SS,mmm`, blank line between cues, positive duration                                                    |
+| VTT    | `WEBVTT` header and blank line, original selected cues, `HH:MM:SS.mmm` times, escaped cue markup where necessary                                                           |
+| JSON   | `schemaVersion: "1.0"`, documented document fields, selected source segments, relevant original chapters, selection descriptor and timing warnings; no acquisition secrets |
 
 SRT/VTT ignore paragraph, metadata and Markdown preset preferences; explain this in export settings. Subtitle times remain absolute relative to the source video. Do not rebase selected cues to zero. Format hours beyond 24 correctly, do not wrap at one day, preserve overlapping cues, and avoid introducing cue delimiters or markup through text. Verify with independent format parsers where practical, not just snapshot comparisons.
 
-Use a sticky footer with Copy, Download .md and More formats. Settings may change the primary download format while Markdown remains easy to reach. Copy reports clipboard failures and offers a selectable text fallback. Keep the document on all export failures.
+Use a sticky footer with Copy, Download .md and Other export formats. Settings may change the primary download format while Markdown remains easy to reach. Copy reports clipboard failures and offers a selectable text fallback. Keep the document on all export failures.
 
 ### 10.3 Files and downloads
 
@@ -356,7 +372,7 @@ Create Blobs in the foreground extension runner; download through `chrome.downlo
 
 Default stem is the retrieved title or `youtube-VIDEO_ID` when absent. Preserve valid Unicode, normalize consistently, remove Windows forbidden/control characters, trim terminal dots/spaces, reject path components and reserved device names even with extensions. Limit stems to 120 Unicode code points, truncating at a grapheme boundary; always retain a valid nonempty fallback. Treat filename patterns as a limited placeholder language, never as paths.
 
-ZIP filenames use sanitized flat basenames; add video IDs and deterministic numeric suffixes for collisions before archiving. Reject `../`, separators and absolute archive entry paths. Combined Markdown has one batch heading, ordered video sections, explicit source attribution and correctly shifted heading levels. Prefix per-video chapter anchors to prevent collisions. ZIP/combined generation includes completed documents only and labels its successful/total count. Include a compact batch manifest with IDs/statuses and no signed URLs; never create empty “successful” exports for failed videos.
+ZIP filenames use sanitised flat basenames; add video IDs and deterministic numeric suffixes for collisions before archiving. Reject `../`, separators and absolute archive entry paths. Combined Markdown has one batch heading, ordered video sections, explicit source attribution and correctly shifted heading levels. Prefix per-video chapter anchors to prevent collisions. ZIP/combined generation includes completed documents only and labels its successful/total count. Include a compact batch manifest with IDs/statuses and no signed URLs; never create empty “successful” exports for failed videos.
 
 ## 11. Batch coordination and recovery
 
@@ -392,45 +408,45 @@ Use a packaged-code-only CSP and no inline scripts, eval or sandbox escape path.
 
 Implement CSS tokens for two deliberate themes:
 
-| Token | Light | Dark |
-|---|---|---|
-| Background | `#F7F9FC` | `#17191A` |
-| Card | `#FFFFFF` | `#222527` |
-| Secondary/elevated | `#EAF3FC` | `#2C3032` |
-| Input | `#FFFFFF` | `#1E2123` |
-| Primary text | `#182332` | `#F2F2EF` |
-| Secondary text | `#66758A` | `#ADB2B4` |
-| Border | `#D8E4F0` | `#41474A` |
-| Primary action | `#2878E8` | `#EFC15B` with charcoal text |
-| Accent | `#F3C861` | `#EFC15B` |
+| Token              | Light     | Dark                         |
+| ------------------ | --------- | ---------------------------- |
+| Background         | `#F7F9FC` | `#17191A`                    |
+| Card               | `#FFFFFF` | `#222527`                    |
+| Secondary/elevated | `#EAF3FC` | `#2C3032`                    |
+| Input              | `#FFFFFF` | `#1E2123`                    |
+| Primary text       | `#182332` | `#F2F2EF`                    |
+| Secondary text     | `#66758A` | `#ADB2B4`                    |
+| Border             | `#D8E4F0` | `#41474A`                    |
+| Primary action     | `#2878E8` | `#EFC15B` with charcoal text |
+| Accent             | `#F3C861` | `#EFC15B`                    |
 
 Check actual token pair contrast and adjust values where required; use measured contrast when finalizing the palette. Use a system sans-serif stack or bundled licensed font, 13–14px compact controls and 14–16px transcript text with approximately 1.6 line height. Prefer 10–14px radii, restrained shadows, balanced spacing and neutral secondary controls. No blue dark theme, neon outlines, gradients or ornamental yellow overload. Create a simple original Vextra icon in SVG source and package 16/32/48/128px PNGs.
 
 Test 320, 400, 600 and 1200 CSS-pixel widths and 200% browser zoom. Reading content scrolls independently; export actions remain reachable and do not obscure the final lines. Long metadata wraps; settings use compact logical groups and templates get an adequate editing surface. No fixed screenshot dimensions as a layout assumption.
 
-Use native buttons, inputs, labels, fieldsets and heading structure. Segmented navigation must have correct selected states and keyboard behavior. Provide visible focus, logical tab order, meaningful icon labels, accessible dialogs with focus return, polite live statuses and alert errors. Do not announce every progress tick. Respect reduced motion, support RTL text, and provide textual status in addition to color. Target WCAG 2.2 AA contrast and keyboard behavior; verify with automated checks and manual keyboard/screen-reader smoke tests.
+Use native buttons, inputs, labels, fieldsets and heading structure. Segmented navigation must have correct selected states and keyboard behaviour. Provide visible focus, logical tab order, meaningful icon labels, accessible dialogs with focus return, polite live statuses and alert errors. Do not announce every progress tick. Respect reduced motion, support RTL text, and provide textual status in addition to color. Target WCAG 2.2 AA contrast and keyboard behaviour; verify with automated checks and manual keyboard/screen-reader smoke tests.
 
 ## 14. Errors and user-facing recovery
 
 Use `VextraError { code, messageKey, retryable, phase, diagnosticId? }`. Keep raw technical details out of standard UI while preserving useful controlled diagnostics.
 
-| Code family | User-facing meaning and action |
-|---|---|
-| INVALID_URL | This is not a supported YouTube video link; correct the input |
-| UNSUPPORTED_PAGE | Open a YouTube video or use From URL |
-| PERMISSION_REQUIRED | Explain the specific missing YouTube/extension permission and how to restore it |
-| VIDEO_UNAVAILABLE / ACCESS_RESTRICTED | Video cannot be accessed; no promise of bypass |
-| CONSENT_REQUIRED / REQUEST_BLOCKED | YouTube returned a consent/challenge/access response; explain any tested ordinary navigation remedy |
-| NO_CAPTION_TRACKS | No accessible tracks were found in a recognized response |
-| DISCOVERY_CHANGED | The video information format could not be recognized; do not claim there are no captions |
-| CAPTION_FETCH_FAILED / RATE_LIMITED | Preserve video/track context; allow appropriate retry or wait |
-| NETWORK / TIMEOUT | Check connection and retry |
-| UNSUPPORTED_CAPTION_FORMAT / INVALID_CAPTIONS | Caption response could not be parsed safely |
-| EMPTY_TRANSCRIPT | No nonempty timed captions were returned; exports remain disabled |
-| INVALID_SELECTION | Correct the interval or select at least one passage/chapter |
-| STORAGE_FULL / RECOVERY_FAILED | Preserve current in-memory work where possible; clear old local data or export now |
-| COPY_FAILED / EXPORT_FAILED / DOWNLOAD_INTERRUPTED | Retain document; retry or choose another format |
-| CANCELLED / INTERRUPTED | Preserve completed batch items; offer explicit resume/retry |
+| Code family                                        | User-facing meaning and action                                                                      |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| INVALID_URL                                        | This is not a supported YouTube video link; correct the input                                       |
+| UNSUPPORTED_PAGE                                   | Open a YouTube video or use From URL                                                                |
+| PERMISSION_REQUIRED                                | Explain the specific missing YouTube/extension permission and how to restore it                     |
+| VIDEO_UNAVAILABLE / ACCESS_RESTRICTED              | Video cannot be accessed; no promise of bypass                                                      |
+| CONSENT_REQUIRED / REQUEST_BLOCKED                 | YouTube returned a consent/challenge/access response; explain any tested ordinary navigation remedy |
+| NO_CAPTION_TRACKS                                  | No accessible tracks were found in a recognised response                                            |
+| DISCOVERY_CHANGED                                  | The video information format could not be recognised; do not claim there are no captions            |
+| CAPTION_FETCH_FAILED / RATE_LIMITED                | Preserve video/track context; allow appropriate retry or wait                                       |
+| NETWORK / TIMEOUT                                  | Check connection and retry                                                                          |
+| UNSUPPORTED_CAPTION_FORMAT / INVALID_CAPTIONS      | Caption response could not be parsed safely                                                         |
+| EMPTY_TRANSCRIPT                                   | No usable captions with timestamps were returned; exports remain disabled                                   |
+| INVALID_SELECTION                                  | Correct the interval or select at least one passage/chapter                                         |
+| STORAGE_FULL / RECOVERY_FAILED                     | Preserve current in-memory work where possible; clear old local data or export now                  |
+| COPY_FAILED / EXPORT_FAILED / DOWNLOAD_INTERRUPTED | Retain document; retry or choose another format                                                     |
+| CANCELLED / INTERRUPTED                            | Preserve completed batch items; offer explicit resume/retry                                         |
 
 Use phase-based progress for discovery, fetching, processing and preparing export. Cancellation is a neutral status. An inability to abort a browser API immediately must still prevent its late result from replacing the current document.
 
@@ -438,50 +454,50 @@ Use phase-based progress for discovery, fetching, processing and preparing expor
 
 Measure on a documented Windows reference machine using a production build. These budgets exclude remote response time and are acceptance targets, not claims of present performance.
 
-| Operation | Target |
-|---|---|
-| Cold UI startup | Ready for input within 1 second, median of 10 launches |
-| Large transcript | 30,000 cues / at least 6 hours renders without mounting all cues |
-| Search | Updated count and first visible match within 200ms after debounce, p95 over 20 queries |
-| Theme/control response | Visible response within 100ms during large-document processing |
-| Cancellation | UI acknowledgement within 100ms; owned fetch aborted or late commit blocked within 1 second |
-| Core formatting | 30,000 cues to Markdown within 2 seconds in compute worker on reference hardware |
-| UI blocking | No repeated main-thread tasks above 50ms from parsing/search/export; record traces for exceptions |
-| Recovery | At least one 100-item persisted batch can reopen and accurately list states without network requests |
+| Operation              | Target                                                                                               |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| Cold UI startup        | Ready for input within 1 second, median of 10 launches                                               |
+| Large transcript       | 30,000 cues / at least 6 hours renders without mounting all cues                                     |
+| Search                 | Updated count and first visible match within 200ms after debounce, p95 over 20 queries               |
+| Theme/control response | Visible response within 100ms during large-document processing                                       |
+| Cancellation           | UI acknowledgement within 100ms; owned fetch aborted or late commit blocked within 1 second          |
+| Core formatting        | 30,000 cues to Markdown within 2 seconds in compute worker on reference hardware                     |
+| UI blocking            | No repeated main-thread tasks above 50ms from parsing/search/export; record traces for exceptions    |
+| Recovery               | At least one 100-item persisted batch can reopen and accurately list states without network requests |
 
 Apply input/response/template/batch caps before expensive work and explain limits. A resource-limit error is preferable to a frozen panel or silent truncation. For very large ZIPs, estimate size, keep memory bounded, and offer individual downloads when the configured archive memory budget would be exceeded. Record measured package size and peak memory; investigate any unexplained growth. Do not add speculative caching or frameworks before profiling.
 
 ## 16. Automated and live acceptance tests
 
-Automated core tests must run offline using sanitized fixtures. Live YouTube probes are separate, explicit and rate-limited so CI is deterministic. A passing fixture proves parsing against that fixture, not current YouTube compatibility.
+Automated core tests must run offline using sanitised fixtures. Live YouTube probes are separate, explicit and rate-limited so CI is deterministic. A passing fixture proves parsing against that fixture, not current YouTube compatibility.
 
-| ID | Required measurable acceptance |
-|---|---|
-| A01 Packaging | Manifest parses, every declared entry/icon exists, unpacked MV3 build loads without extension errors, no remote code or development server references |
-| A02 URL handling | All required URL forms normalize identically; hostile lookalikes, credentials, unsupported schemes, bad IDs and conflicting parameters fail before fetch |
-| A03 Current video | Correct ID/metadata/tracks before extraction; navigating A→B without reload updates detection and rejects stale A results |
-| A04 URL extraction | From an unrelated tab, a validated captioned URL yields actual timed captions without manual target-page navigation |
-| A05 Languages | Multiple tracks display correct actual language/type; manual preference works; explicit automatic selection wins; no translation requests |
-| A06 Failure classification | Fixtures for no tracks, unrecognized schema, restriction, challenge, consent, network, 403, 429, empty body and HTML-instead-of-captions yield distinct appropriate states |
-| A07 Parsers | JSON3/XML/SRV3 fixtures preserve Unicode, entities, punctuation and timing; malformed times/markup produce warnings/errors; missing final duration is explicitly inferred |
-| A08 Integrity | Intentional repeated phrases/overlaps survive source, JSON and subtitle output; paragraph changes leave source cue arrays unchanged |
-| A09 Chapters | Only proven chapter records become headings; no-chapter output uses neutral structure; chapter boundaries do not duplicate cues |
-| A10 Selection | Full/range/chapter/passage selections yield exact expected cue IDs, half-open boundary cases, source order and no empty success document |
-| A11 Search | Mixed case, RTL, CJK, combining marks and multi-cue queries are counted across all content; next/previous reaches results outside the rendered window |
-| A12 Markdown | All three presets have exact expected source/metadata/heading behavior; missing fields omitted; malicious Markdown/HTML stays inert in preview |
-| A13 Templates | All placeholders, single-pass behavior, unknown-token validation, built-in protection, CRUD and local persistence pass; executable-looking input never executes |
-| A14 Text/subtitles | TXT has no escaping artifacts; SRT/VTT round-trip timing/text with independent parsers; long hours, overlap, inferred timing and literal cue markup are covered |
-| A15 JSON | Versioned JSON validates against schema; includes selected original timed segments and selection context; excludes signed URLs and secrets |
-| A16 Files/ZIP | Reserved names, invalid characters, emoji, long names, duplicates and path traversal inputs produce safe files; independent ZIP reader verifies all expected entries/content |
-| A17 Batch | Mixed valid/duplicate/invalid input, partial failures, rate limit, concurrency bound, cancellation and failed-only retry preserve successful documents |
-| A18 Recovery | Terminate runner after claim, after fetch and after commit; restart browser; states never falsely become completed; completed records remain; Resume rediscovers expired URLs |
-| A19 Multiple UIs | Two panels/tabs cannot claim the same item; expired old owner cannot commit after lease takeover; cancellation is durable across contexts |
-| A20 Preferences | All settings survive restart; migrations handle older/corrupt data; system theme changes live without transcript loss |
-| A21 Local data | Retention/caps/clear actions work; cancelled generations cannot repopulate cleared data; quota errors offer recovery |
-| A22 Security | Reject unauthorized/oversized messages, external caption redirects and unsafe links; inspect network log for only approved hosts; no analytics/remote code |
-| A23 UX/accessibility | Keyboard-only extract/search/select/export/settings succeeds; focus is visible; status announced; both themes at all required widths and 200% zoom remain usable |
-| A24 Performance | Record results for every budget using 30,000-cue fixtures and worker/UI traces |
-| A25 Real browsers | Dated actual packaged-build checklist passes on Chrome, Brave, Edge and Vivaldi; Opera result recorded if tested |
+| ID                         | Required measurable acceptance                                                                                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A01 Packaging              | Manifest parses, every declared entry/icon exists, unpacked MV3 build loads without extension errors, no remote code or development server references                         |
+| A02 URL handling           | All required URL forms normalize identically; hostile lookalikes, credentials, unsupported schemes, bad IDs and conflicting parameters fail before fetch                      |
+| A03 Current video          | Correct ID/metadata/tracks before extraction; navigating A→B without reload updates detection and rejects stale A results                                                     |
+| A04 URL extraction         | From an unrelated tab, a validated captioned URL yields actual timed captions without manual target-page navigation                                                           |
+| A05 Languages              | Multiple tracks display correct actual language/type; manual preference works; explicit automatic selection wins; no translation requests                                     |
+| A06 Failure classification | Fixtures for no tracks, unrecognised schema, restriction, challenge, consent, network, 403, 429, empty body and HTML-instead-of-captions yield distinct appropriate states    |
+| A07 Parsers                | JSON3/XML/SRV3 fixtures preserve Unicode, entities, punctuation and timing; malformed times/markup produce warnings/errors; missing final duration is explicitly inferred     |
+| A08 Integrity              | Intentional repeated phrases/overlaps survive source, JSON and subtitle output; paragraph changes leave source cue arrays unchanged                                           |
+| A09 Chapters               | Only proven chapter records become headings; no-chapter output uses neutral structure; chapter boundaries do not duplicate cues                                               |
+| A10 Selection              | Full/range/chapter/passage selections yield exact expected cue IDs, half-open boundary cases, source order and no empty success document                                      |
+| A11 Search                 | Mixed case, RTL, CJK, combining marks and multi-cue queries are counted across all content; next/previous reaches results outside the rendered window                         |
+| A12 Markdown               | All three presets have exact expected source/metadata/heading behaviour; missing fields omitted; malicious Markdown/HTML stays inert in preview                               |
+| A13 Templates              | All placeholders, single-pass behaviour, unknown-token validation, built-in protection, CRUD and local persistence pass; executable-looking input never executes              |
+| A14 Text/subtitles         | TXT has no escaping artifacts; SRT/VTT round-trip timing/text with independent parsers; long hours, overlap, inferred timing and literal cue markup are covered               |
+| A15 JSON                   | Versioned JSON validates against schema; includes selected original timed segments and selection context; excludes signed URLs and secrets                                    |
+| A16 Files/ZIP              | Reserved names, invalid characters, emoji, long names, duplicates and path traversal inputs produce safe files; independent ZIP reader verifies all expected entries/content  |
+| A17 Batch                  | Mixed valid/duplicate/invalid input, partial failures, rate limit, concurrency bound, cancellation and failed-only retry preserve successful documents                        |
+| A18 Recovery               | Terminate runner after claim, after fetch and after commit; restart browser; states never falsely become completed; completed records remain; Resume rediscovers expired URLs |
+| A19 Multiple UIs           | Two panels/tabs cannot claim the same item; expired old owner cannot commit after lease takeover; cancellation is durable across contexts                                     |
+| A20 Preferences            | All settings survive restart; migrations handle older/corrupt data; system theme changes live without transcript loss                                                         |
+| A21 Local data             | Retention/caps/clear actions work; cancelled generations cannot repopulate cleared data; quota errors offer recovery                                                          |
+| A22 Security               | Reject unauthorized/oversized messages, external caption redirects and unsafe links; inspect network log for only approved hosts; no analytics/remote code                    |
+| A23 UX/accessibility       | Keyboard-only extract/search/select/export/settings succeeds; focus is visible; status announced; both themes at all required widths and 200% zoom remain usable              |
+| A24 Performance            | Record results for every budget using 30,000-cue fixtures and worker/UI traces                                                                                                |
+| A25 Real browsers          | Dated actual packaged-build checklist passes on Chrome, Brave, Edge and Vivaldi; Opera result recorded if tested                                                              |
 
 For A25, record browser version, OS, build checksum and panel/tab variant. On each primary browser test toolbar opening, current and pasted URL extraction, language switch, SPA navigation, search, range selection, Markdown preview, all five file formats, template persistence, both themes and a mixed-result batch ZIP. Test service-worker termination separately from foreground-runner termination. Test browser restart with an unfinished batch. Use an independent ZIP/subtitle reader and inspect exported Unicode files in a text editor.
 
@@ -490,17 +506,17 @@ Automated extension tests should use a supported persistent Chromium profile and
 ## 17. Implementation milestones and exit criteria
 
 1. **Foundation and feasibility.** Create tooling, manifest variants, browser adapter, theme shell and source contracts. Complete URL tests, load unpacked builds, and run the live extraction gate. Exit only with documented current-page and pasted-URL evidence or a clearly identified unresolved release blocker.
-2. **Source and processing.** Implement language discovery/selection, request policies, parsers, warnings, timed model and chapter adapters. Pass A02–A09 and sanitized adapter integration tests. Preserve original data before adding derived presentation.
+2. **Source and processing.** Implement language discovery/selection, request policies, parsers, warnings, timed model and chapter adapters. Pass A02–A09 and sanitised adapter integration tests. Preserve original data before adding derived presentation.
 3. **Reading workspace.** Implement original/clean modes, full-document search, timestamp navigation, virtualized rendering and all selection modes. Pass A10–A11 and initial accessibility/performance checks.
 4. **Documents and downloads.** Implement presets, safe preview, templates, settings, filenames and every format. Pass A12–A16, A20 and failure-preservation tests. Demonstrate real downloads from an installed build.
-5. **Batch and recovery.** Implement queue, transaction/lease fencing, bounded retry, cancellation, retention, individual/combined/ZIP outputs and restart behavior. Pass A17–A19 and A21.
+5. **Batch and recovery.** Implement queue, transaction/lease fencing, bounded retry, cancellation, retention, individual/combined/ZIP outputs and restart behaviour. Pass A17–A19 and A21.
 6. **Release validation.** Complete security, accessibility, performance and primary-browser matrix; fix defects; build fresh artifacts; finish installation, user, privacy and limitations documentation. Exit only when all A01–A25 requirements have evidence.
 
 Each milestone should leave the application buildable. Maintain a concise feature checklist showing implemented, tested, externally validated and unresolved states. Do not call a subsystem verified merely because its UI or unit fixtures exist.
 
 ## 18. Build, packaging and final handoff
 
-Provide these scripts with matching documented behavior:
+Provide these scripts with matching documented behaviour:
 
 ```text
 npm ci

@@ -4,7 +4,8 @@ export async function readNativeTranscript(input: {
   label: string;
   automatic: boolean;
   uniqueLabel: boolean;
-}) {
+  singleTrack?: boolean;
+}): Promise<{ payload?: string; error?: string; languageVerified?: boolean }> {
   const deadline = Date.now() + 25_000;
   const validVideo = () => {
     const url = new URL(location.href);
@@ -43,9 +44,113 @@ export async function readNativeTranscript(input: {
     return { error: "CONSENT_REQUIRED" };
   const originalX = scrollX,
     originalY = scrollY;
+  const record = (value: unknown): Record<string, unknown> =>
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  const modernPanel = () => {
+    const segment = find("transcript-segment-view-model");
+    return segment?.closest<HTMLElement>(
+      "ytd-engagement-panel-section-list-renderer",
+    );
+  };
+  const readModern = (panel: HTMLElement) => {
+    if (
+      Array.from(panel.querySelectorAll<HTMLInputElement>("input")).some((n) =>
+        n.value.trim(),
+      )
+    )
+      return { error: "NATIVE_FILTER_ACTIVE" };
+    const data = record((panel as HTMLElement & { data?: unknown }).data);
+    const list = record(record(data.content).sectionListRenderer);
+    if (!Array.isArray(list.contents) || !list.contents.length) return;
+    if (list.contents.length > 100_000) return { error: "NATIVE_CUE_LIMIT" };
+    if (Array.isArray(list.continuations) && list.continuations.length)
+      return { error: "NATIVE_TRANSCRIPT_UNAVAILABLE" };
+    const events: { tStartMs: number; segs: { utf8: string }[] }[] = [];
+    let modelIndex = 0;
+    for (const section of list.contents) {
+      const wrapper = record(section);
+      if (wrapper.continuationItemRenderer || wrapper.continuationEndpoint)
+        return { error: "NATIVE_TRANSCRIPT_UNAVAILABLE" };
+      const group = record(wrapper.itemSectionRenderer);
+      if (
+        !Array.isArray(group.contents) ||
+        (Array.isArray(group.continuations) && group.continuations.length)
+      )
+        return { error: "NATIVE_TRANSCRIPT_UNAVAILABLE" };
+      if (group.header !== undefined) {
+        const header = record(
+          record(group.header).macroMarkersPanelItemViewModel,
+        );
+        const chapter = record(record(header.item).timelineChapterViewModel);
+        const endpoint = record(
+          record(record(header.onTap).innertubeCommand).watchEndpoint,
+        );
+        if (
+          header.panelId !== "PAmodern_transcript_view" ||
+          header.index !== modelIndex ||
+          endpoint.videoId !== input.videoId ||
+          typeof chapter.title !== "string" ||
+          !chapter.title.trim() ||
+          typeof endpoint.startTimeSeconds !== "number" ||
+          !Number.isSafeInteger(endpoint.startTimeSeconds * 1000) ||
+          endpoint.startTimeSeconds < 0
+        )
+          return { error: "NATIVE_TRANSCRIPT_UNAVAILABLE" };
+        modelIndex++;
+      }
+      if (modelIndex + group.contents.length > 100_000)
+        return { error: "NATIVE_CUE_LIMIT" };
+      for (const entry of group.contents) {
+        const marker = record(record(entry).macroMarkersPanelItemViewModel);
+        const timeline = record(record(marker.item).timelineItemViewModel);
+        const endpoint = record(
+          record(record(marker.onTap).innertubeCommand).watchEndpoint,
+        );
+        if (
+          marker.panelId !== "PAmodern_transcript_view" ||
+          marker.index !== modelIndex ||
+          endpoint.videoId !== input.videoId ||
+          !Array.isArray(timeline.contentItems) ||
+          timeline.contentItems.length !== 1
+        )
+          return { error: "NATIVE_TRANSCRIPT_UNAVAILABLE" };
+        const cue = record(
+          record(timeline.contentItems[0]).transcriptSegmentViewModel,
+        );
+        const startMs = Number(endpoint.startTimeSeconds) * 1000;
+        if (
+          typeof endpoint.startTimeSeconds !== "number" ||
+          !Number.isSafeInteger(startMs) ||
+          startMs < 0 ||
+          (events.length && startMs < events.at(-1)!.tStartMs) ||
+          typeof cue.simpleText !== "string" ||
+          !cue.simpleText.trim()
+        )
+          return { error: "NATIVE_TRANSCRIPT_UNAVAILABLE" };
+        events.push({ tStartMs: startMs, segs: [{ utf8: cue.simpleText }] });
+        modelIndex++;
+      }
+    }
+    if (!events.length) return;
+    const label = Array.from(
+      panel.querySelectorAll<HTMLElement>("button, [role=combobox]"),
+    ).find((n) => visible(n) && matchesLanguage(n.textContent ?? ""));
+    // The modern panel may omit language controls even on multilingual videos.
+    // Preserve its complete text, but never assign the requested track metadata
+    // unless the panel actually confirms it.
+    const payload = JSON.stringify({ events });
+    if (
+      payload.length > 3 * 1024 * 1024 ||
+      new TextEncoder().encode(payload).byteLength > 3 * 1024 * 1024
+    )
+      return { error: "NATIVE_SIZE_LIMIT" };
+    return { payload, languageVerified: Boolean(label) };
+  };
   try {
     let container = find("ytd-transcript-renderer");
-    if (!container) {
+    if (!container && !modernPanel()) {
       const expand = find("ytd-watch-metadata #expand");
       expand?.click();
       await pause();
@@ -63,6 +168,25 @@ export async function readNativeTranscript(input: {
       stableSince = Date.now();
     while (Date.now() < deadline) {
       if (!validVideo()) return { error: "UNSUPPORTED_PAGE" };
+      const modern = modernPanel();
+      if (modern) {
+        const result = readModern(modern);
+        if (result?.error) return result;
+        if (result?.payload) {
+          const loading = Array.from(
+            modern.querySelectorAll(
+              'tp-yt-paper-spinner[active], [role="progressbar"]',
+            ),
+          ).some(visible);
+          if (signature !== result.payload) {
+            signature = result.payload;
+            stableSince = Date.now();
+          }
+          if (!loading && Date.now() - stableSince >= 1200) return result;
+        }
+        await pause();
+        continue;
+      }
       const panel = find(
         'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"]',
       );
@@ -120,7 +244,7 @@ export async function readNativeTranscript(input: {
           "ytd-transcript-segment-renderer",
         ),
       );
-      if (elements.length > 100_000) return { error: "LIMIT" };
+      if (elements.length > 100_000) return { error: "NATIVE_CUE_LIMIT" };
       let events: {
         tStartMs: number;
         dDurationMs?: number;
@@ -157,7 +281,7 @@ export async function readNativeTranscript(input: {
       ) as (HTMLElement & { data?: { initialSegments?: unknown[] } }) | null;
       const full = list?.data?.initialSegments;
       if (Array.isArray(full) && full.length > 100000)
-        return { error: "LIMIT" };
+        return { error: "NATIVE_CUE_LIMIT" };
       if (
         Array.isArray(full) &&
         full.some(
@@ -229,7 +353,11 @@ export async function readNativeTranscript(input: {
         Date.now() - stableSince >= 1200
       ) {
         const payload = JSON.stringify({ events });
-        if (payload.length > 3 * 1024 * 1024) return { error: "LIMIT" };
+        if (
+          payload.length > 3 * 1024 * 1024 ||
+          new TextEncoder().encode(payload).byteLength > 3 * 1024 * 1024
+        )
+          return { error: "NATIVE_SIZE_LIMIT" };
         return { payload };
       }
       await pause();

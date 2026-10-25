@@ -6,6 +6,7 @@ import type {
 } from "../model/types.ts";
 import { builtinBody } from "../model/types.ts";
 import { VextraError } from "../model/errors.ts";
+import { boundedExport, limits } from "../model/limits.ts";
 import { paragraphs, resolveSelection, time } from "../processing/text.ts";
 
 export const escapeMd = (s: string): string =>
@@ -32,8 +33,11 @@ const keys = new Set([
   "notes",
 ]);
 export function validateTemplate(body: string): void {
-  if (new TextEncoder().encode(body).byteLength > 50 * 1024)
-    throw new VextraError("INVALID_TEMPLATE");
+  if (
+    body.length > limits.templateBytes ||
+    new TextEncoder().encode(body).byteLength > limits.templateBytes
+  )
+    throw new VextraError("TEMPLATE_SIZE_LIMIT");
   for (const m of body.matchAll(/{{([\s\S]*?)}}/g))
     if (!keys.has(m[1]!.trim())) throw new VextraError("INVALID_TEMPLATE");
   if (
@@ -47,9 +51,23 @@ export function expandTemplate(
   values: Record<string, string>,
 ): string {
   validateTemplate(body);
-  return body.replace(
-    /{{\s*(\w+)\s*}}/g,
-    (_, key: string) => values[key] ?? "",
+  // Account for every substitution before allocating the expanded document.
+  const encoder = new TextEncoder();
+  let length = encoder.encode(body).byteLength;
+  const sizes = new Map<string, number>();
+  for (const match of body.matchAll(/{{\s*(\w+)\s*}}/g)) {
+    const key = match[1]!;
+    if (!sizes.has(key)) {
+      const value = values[key] ?? "";
+      if (value.length > limits.exportBytes)
+        throw new VextraError("EXPORT_SIZE_LIMIT");
+      sizes.set(key, encoder.encode(value).byteLength);
+    }
+    length += sizes.get(key)! - match[0].length;
+  }
+  if (length > limits.exportBytes) throw new VextraError("EXPORT_SIZE_LIMIT");
+  return boundedExport(
+    body.replace(/{{\s*(\w+)\s*}}/g, (_, key: string) => values[key] ?? ""),
   );
 }
 export function markdown(

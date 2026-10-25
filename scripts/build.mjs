@@ -1,7 +1,8 @@
 import { build } from "vite";
-import { mkdir, writeFile, cp, rm } from "node:fs/promises";
+import { mkdir, writeFile, cp, rm, readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { PNG } from "pngjs";
+const { version } = JSON.parse(await readFile("package.json", "utf8"));
 await build();
 for (const [name, entry] of [
   ["background", "src/background/index.ts"],
@@ -47,7 +48,7 @@ const matches = [
 const manifest = {
   manifest_version: 3,
   name: "Vextra",
-  version: "1.0.0",
+  version,
   description: "Turn accessible YouTube captions into reusable documents.",
   permissions: ["storage", "scripting", "downloads", "sidePanel"],
   host_permissions: matches,
@@ -63,7 +64,7 @@ const manifest = {
   ],
   content_security_policy: {
     extension_pages:
-      "default-src 'self'; script-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-src 'none'; connect-src https://www.youtube.com https://m.youtube.com https://youtube.com; img-src 'self' data: https://i.ytimg.com; style-src 'self'",
+      "default-src 'self'; script-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-src 'none'; connect-src https://www.youtube.com https://m.youtube.com https://youtube.com; img-src 'self' data: https://i.ytimg.com; style-src 'self'; form-action 'none'",
   },
 };
 await writeFile(`${dir}/manifest.json`, JSON.stringify(manifest, null, 2));

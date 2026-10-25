@@ -2,6 +2,50 @@ import { afterEach, describe, it, expect, vi } from "vitest";
 import { youtubeRequest } from "../../src/source/youtube/request.ts";
 afterEach(() => vi.unstubAllGlobals());
 describe("restricted network boundary", () => {
+  it("cancels an oversized declared response body before reading", async () => {
+    const cancel = vi.fn();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-length": String(26 * 1024 * 1024) }),
+        body: { cancel },
+      }),
+    );
+    cancel.mockResolvedValue(undefined);
+    await expect(
+      youtubeRequest(
+        new URL("https://www.youtube.com/watch?v=abcdefghijk"),
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({ code: "RESPONSE_SIZE_LIMIT" });
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+  it("limits streamed responses even without a content-length header", async () => {
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    const read = vi.fn().mockResolvedValueOnce({
+      done: false,
+      value: new Uint8Array(25 * 1024 * 1024 + 1),
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        body: { getReader: () => ({ read, cancel }) },
+      }),
+    );
+    await expect(
+      youtubeRequest(
+        new URL("https://www.youtube.com/api/timedtext"),
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({ code: "RESPONSE_SIZE_LIMIT" });
+    expect(read).toHaveBeenCalledOnce();
+    expect(cancel).toHaveBeenCalledOnce();
+  });
   it("rejects unapproved origins before fetching", async () => {
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);

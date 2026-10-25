@@ -134,7 +134,9 @@ export async function latestBatch(): Promise<Batch | undefined> {
     lease = await value<Lease | undefined>(
       tx.objectStore("meta").get("runner"),
     );
-  const batch = all.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  const batch = all
+    .filter((b) => b.createdAt + 7 * 86400000 > Date.now())
+    .sort((a, b) => b.updatedAt - a.updatedAt)[0];
   if (batch && (!lease || lease.expires <= Date.now()))
     batch.items = batch.items.map((i) =>
       i.status === "extracting"
@@ -176,7 +178,7 @@ export async function commit(
       id: document.documentId,
       value: document,
       bytes,
-      expires: Date.now() + (batch ? 7 : 1) * 86400000,
+      expires: batch ? batch.createdAt + 7 * 86400000 : Date.now() + 86400000,
       sessionOnly: !retain,
     } satisfies StoredDocument);
   }
@@ -186,12 +188,12 @@ export async function commit(
 }
 export async function getDocument(id: string): Promise<Transcript | undefined> {
   const db = await database();
-  const raw = (
-    await value<StoredDocument | undefined>(
-      db.transaction("documents").objectStore("documents").get(id),
-    )
-  )?.value;
-  return raw ? validatedTranscript(raw) : undefined;
+  const record = await value<StoredDocument | undefined>(
+    db.transaction("documents").objectStore("documents").get(id),
+  );
+  return record && record.expires > Date.now()
+    ? validatedTranscript(record.value)
+    : undefined;
 }
 export async function latestDocument(): Promise<Transcript | undefined> {
   const db = await database(),

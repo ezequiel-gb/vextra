@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   acquire,
   clearData,
@@ -14,6 +14,18 @@ import {
 } from "../../src/persistence/database.ts";
 import { documentFixture as doc } from "../fixtures/document.ts";
 describe("transactional recovery and fencing", () => {
+  it("does not return an expired document by ID before physical cleanup", async () => {
+    await clearData();
+    const lease = await acquire("expiry");
+    await commit(lease, undefined, doc);
+    await release(lease);
+    const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 86400001);
+    try {
+      expect(await getDocument(doc.documentId)).toBeUndefined();
+    } finally {
+      clock.mockRestore();
+    }
+  });
   it("rejects duplicate owners, preserves committed documents, and fences stale writers", async () => {
     await clearData();
     const lease = await acquire("one");

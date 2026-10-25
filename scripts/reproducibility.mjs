@@ -21,30 +21,44 @@ async function fingerprint(dir, prefix = "") {
   }
   return files;
 }
-const before = await fingerprint("dist");
-const result = spawnSync(process.execPath, ["scripts/build.mjs"], {
-  encoding: "utf8",
-});
-if (result.status !== 0) {
-  console.error(result.stdout, result.stderr);
-  process.exit(1);
+function run(script) {
+  const result = spawnSync(process.execPath, [script], { encoding: "utf8" });
+  assert.equal(
+    result.status,
+    0,
+    `${script} failed:\n${result.stdout}\n${result.stderr}`,
+  );
 }
-const after = await fingerprint("dist");
-assert.deepEqual(after, before);
+async function snapshot() {
+  run("scripts/build.mjs");
+  run("scripts/package.mjs");
+  return {
+    files: await fingerprint("dist"),
+    archives: await readFile("artifacts/SHA256SUMS.txt", "utf8"),
+  };
+}
+const before = await snapshot(),
+  after = await snapshot();
+assert.deepEqual(
+  after,
+  before,
+  "Consecutive builds or release archives differ",
+);
 await mkdir("artifacts", { recursive: true });
 await writeFile(
   "artifacts/build-reproducibility.json",
   JSON.stringify(
     {
       date: new Date().toISOString(),
-      result: "identical generated contents across two consecutive builds",
-      cleanDependencyInstall: "npm ci executed before checks",
-      files: after,
+      result:
+        "Two production builds and all three release archives are byte-identical",
+      node: process.version,
+      ...after,
     },
     null,
     2,
   ),
 );
 console.log(
-  `Reproducibility verified: ${after.length} files identical across consecutive production builds.`,
+  `Reproducibility verified: ${after.files.length} generated files and three release archives match across two builds.`,
 );

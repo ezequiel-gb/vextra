@@ -1,4 +1,5 @@
 import type { ComputeRequest } from "../workers/compute.ts";
+import { VextraError } from "../model/errors.ts";
 type Request = ComputeRequest extends infer T
   ? T extends { id: number }
     ? Omit<T, "id">
@@ -14,22 +15,27 @@ export function compute<T>(request: Request, signal?: AbortSignal): Promise<T> {
     );
     const id = ++sequence;
     const abort = () => {
-      worker.terminate();
+      finish();
       reject(new DOMException("Aborted", "AbortError"));
+    };
+    const finish = () => {
+      signal?.removeEventListener("abort", abort);
+      worker.terminate();
     };
     if (signal?.aborted) {
       abort();
       return;
     }
     signal?.addEventListener("abort", abort, { once: true });
-    const finish = () => {
-      signal?.removeEventListener("abort", abort);
-      worker.terminate();
-    };
     worker.onmessage = (e) => {
       if (e.data.id !== id) return;
       finish();
-      if (e.data.error) reject(new Error(e.data.error));
+      if (e.data.error)
+        reject(
+          e.data.code
+            ? new VextraError(e.data.code)
+            : new VextraError("EXPORT_FAILED"),
+        );
       else resolve(e.data.data as T);
     };
     worker.onerror = () => {

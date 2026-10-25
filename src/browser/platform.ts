@@ -37,7 +37,8 @@ export async function nativeTranscript(
   label: string,
   automatic: boolean,
   uniqueLabel: boolean,
-): Promise<string> {
+  singleTrack: boolean,
+): Promise<{ payload: string; languageVerified: boolean }> {
   const requestId = crypto.randomUUID();
   const response = object(
     await chrome.runtime.sendMessage({
@@ -49,6 +50,7 @@ export async function nativeTranscript(
       label,
       automatic,
       uniqueLabel,
+      singleTrack,
     }),
   );
   if (
@@ -62,16 +64,25 @@ export async function nativeTranscript(
     throw new VextraError(
       [
         "CONSENT_REQUIRED",
-        "LIMIT",
+        "NATIVE_CUE_LIMIT",
+        "NATIVE_SIZE_LIMIT",
         "UNSUPPORTED_PAGE",
         "NATIVE_LANGUAGE_UNVERIFIED",
+        "NATIVE_FILTER_ACTIVE",
       ].includes(data.error)
         ? data.error
         : "NATIVE_TRANSCRIPT_UNAVAILABLE",
     );
-  if (typeof data.payload !== "string" || data.payload.length > 3 * 1024 * 1024)
+  if (
+    typeof data.payload !== "string" ||
+    data.payload.length > 3 * 1024 * 1024 ||
+    new TextEncoder().encode(data.payload).byteLength > 3 * 1024 * 1024
+  )
     throw new VextraError("NATIVE_TRANSCRIPT_UNAVAILABLE");
-  return data.payload;
+  return {
+    payload: data.payload,
+    languageVerified: data.languageVerified !== false,
+  };
 }
 export async function downloadBlob(
   blob: Blob,

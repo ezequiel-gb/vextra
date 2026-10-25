@@ -6,13 +6,24 @@ import type {
 } from "../model/types.ts";
 import { markdown } from "../documents/markdown.ts";
 import { paragraphs, resolveSelection, time } from "../processing/text.ts";
+import { boundedExport } from "../model/limits.ts";
+import { validatedTranscript } from "../model/validate.ts";
 export function exportText(
   doc: Transcript,
   selection: Selection,
   settings: Settings,
   format: Format,
 ): string {
+  return boundedExport(formatText(doc, selection, settings, format));
+}
+function formatText(
+  doc: Transcript,
+  selection: Selection,
+  settings: Settings,
+  format: Format,
+): string {
   if (format === "md") return markdown(doc, selection, settings);
+  if (format === "json") doc = validatedTranscript(doc);
   const segments = resolveSelection(doc, selection);
   if (format === "json")
     return (
@@ -92,6 +103,7 @@ export function filename(
     .map((c) =>
       c.codePointAt(0)! < 32 ||
       c.codePointAt(0) === 127 ||
+      /[\u202a-\u202e\u2066-\u2069]/u.test(c) ||
       /[<>:"/\\|?*]/.test(c)
         ? "-"
         : c,

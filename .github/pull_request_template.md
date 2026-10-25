@@ -1,6 +1,6 @@
 ## Change
 
-Describe the problem and resulting behavior. Link the relevant issue, if any.
+Describe the problem and resulting behaviour. Link the relevant issue, if any.
 
 ## Validation
 
