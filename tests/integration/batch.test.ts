@@ -110,3 +110,68 @@ describe("batch execution", () => {
     await first;
   });
 });
+
+it("retries a transient item failure and continues past another failed video", async () => {
+  await clearData();
+  let first = true;
+  vi.mocked(discover).mockImplementation(async (url) => {
+    if (url.includes("12345678901")) throw new VextraError("VIDEO_UNAVAILABLE");
+    if (first) {
+      first = false;
+      throw new VextraError("NETWORK");
+    }
+    return {
+      videoId: doc.videoId,
+      sourceUrl: doc.sourceUrl,
+      tracks: [],
+      chapters: [],
+      adapterId: "test-only",
+    };
+  });
+  vi.mocked(chooseTrack).mockReturnValue({
+    id: "en",
+    languageCode: "en",
+    displayName: "English",
+    captionType: "manual",
+    acquisitionRef: "test-only",
+  });
+  vi.mocked(extract).mockResolvedValue({ ...doc, language: "und" });
+  const batch: Batch = {
+    id: "retry-and-continue",
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    cancelled: false,
+    items: [
+      {
+        videoId: "12345678901",
+        sourceUrl: "https://www.youtube.com/watch?v=12345678901",
+        status: "pending",
+        attempts: 0,
+      },
+      {
+        videoId: doc.videoId,
+        sourceUrl: doc.sourceUrl,
+        status: "pending",
+        attempts: 0,
+      },
+    ],
+  };
+  await runBatch(
+    batch,
+    defaults,
+    new AbortController().signal,
+    () => undefined,
+  );
+  const saved = (await latestBatch())!;
+  expect(saved.items.map((i) => i.status)).toEqual(["failed", "completed"]);
+  expect(saved.items[1]?.attempts).toBe(2);
+  expect(saved.items[1]?.language).toBe("und");
+  expect(extract).toHaveBeenCalledWith(
+    expect.any(Object),
+    "en",
+    expect.any(AbortSignal),
+    undefined,
+    "batch",
+  );
+  expect((await getDocument(doc.documentId))?.segments).toEqual(doc.segments);
+}, 15000);

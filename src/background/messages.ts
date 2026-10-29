@@ -22,30 +22,7 @@ export function pageRequest(
   sender: chrome.runtime.MessageSender,
 ): PageRequest | undefined {
   const m = object(raw);
-  if (
-    sender.id !== chrome.runtime.id ||
-    (sender.frameId !== undefined && sender.frameId !== 0)
-  )
-    return;
-  try {
-    const url = new URL(sender.url ?? "");
-    if (
-      sender.origin &&
-      sender.origin !== chrome.runtime.getURL("").replace(/\/$/, "")
-    )
-      return;
-    url.search = "";
-    url.hash = "";
-    if (
-      ![
-        chrome.runtime.getURL("panel.html"),
-        chrome.runtime.getURL("settings.html"),
-      ].includes(url.href)
-    )
-      return;
-  } catch {
-    return;
-  }
+  if (!trustedPage(sender)) return;
   if (
     m.protocolVersion !== 1 ||
     typeof m.requestId !== "string" ||
@@ -69,4 +46,32 @@ export function pageRequest(
       return;
   } else if (m.type !== "READ_PLAYER") return;
   return m as PageRequest;
+}
+
+export function trustedPage(sender: chrome.runtime.MessageSender): boolean {
+  if (
+    sender.id !== chrome.runtime.id ||
+    (sender.frameId !== undefined && sender.frameId !== 0)
+  )
+    return false;
+  try {
+    const url = new URL(sender.url ?? "");
+    if (
+      sender.origin &&
+      sender.origin !== chrome.runtime.getURL("").replace(/\/$/, "")
+    )
+      return false;
+    url.search = "";
+    url.hash = "";
+    if (
+      ![
+        chrome.runtime.getURL("panel.html"),
+        chrome.runtime.getURL("settings.html"),
+      ].includes(url.href)
+    )
+      return false;
+  } catch {
+    return false;
+  }
+  return true;
 }

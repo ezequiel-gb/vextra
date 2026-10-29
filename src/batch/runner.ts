@@ -70,10 +70,16 @@ export async function runBatch(
       for (let attempt = 0; attempt < 3; attempt++) {
         item.attempts++;
         try {
-          const d = await discover(item.sourceUrl, deadline);
+          const d = await discover(
+            item.sourceUrl,
+            deadline,
+            undefined,
+            "batch",
+          );
           const track = chooseTrack(d, settings);
           item.language = track.languageCode;
-          document = await extract(d, track.id, deadline);
+          document = await extract(d, track.id, deadline, undefined, "batch");
+          item.language = document.language;
           item.status = "completed";
           item.error = undefined;
           item.documentId = document.documentId;

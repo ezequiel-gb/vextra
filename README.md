@@ -7,7 +7,7 @@
 
 Vextra is an open-source Chromium browser extension for extracting, reading and exporting YouTube transcripts. Work with available captions as searchable text and structured documents, including Markdown, in a side panel designed for research and reference.
 
-**[Download Vextra v1.0.1](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.1/Vextra-1.0.1-chromium.zip)** · [Releases](https://github.com/ezequiel-gb/vextra/releases) · [Installation](#installation)
+**[Download Vextra v1.0.2](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.2/Vextra-1.0.2-chromium.zip)** · [Releases](https://github.com/ezequiel-gb/vextra/releases) · [Installation](#installation)
 
 ## Features
 
@@ -58,14 +58,14 @@ Explore the source modes, transcript reader and Markdown workspace. These captur
 
 ## Installation
 
-Download **[Vextra-1.0.1-chromium.zip](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.1/Vextra-1.0.1-chromium.zip)** from [GitHub Releases](https://github.com/ezequiel-gb/vextra/releases).
+Download **[Vextra-1.0.2-chromium.zip](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.2/Vextra-1.0.2-chromium.zip)** from [GitHub Releases](https://github.com/ezequiel-gb/vextra/releases).
 
 Extract the ZIP into a permanent folder before installing. Select the extracted folder containing <code>manifest.json</code> directly, and keep it available afterward. GitHub's automatic **Source code** archives are for development; use the named Chromium release asset for installation.
 
 ### Brave
 
 1. Open [GitHub Releases](https://github.com/ezequiel-gb/vextra/releases).
-2. Download <code>Vextra-1.0.1-chromium.zip</code>.
+2. Download <code>Vextra-1.0.2-chromium.zip</code>.
 3. Extract it into a permanent folder on your computer.
 4. Open Brave.
 5. Enter <code>brave://extensions</code> in the address bar.
@@ -102,7 +102,7 @@ Extract the ZIP into a permanent folder before installing. Select the extracted 
 9. Pin Vextra from the Extensions menu if desired.
 10. Open a YouTube video and launch Vextra.
 
-Other compatible Chromium browsers use a similar extension-management interface. If a browser cannot support the side-panel manifest, use the [tab fallback ZIP](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.1/Vextra-1.0.1-chromium-tab.zip). See [installation details](docs/INSTALLATION.md) for compatibility notes.
+Other compatible Chromium browsers use a similar extension-management interface. If a browser cannot support the side-panel manifest, use the [tab fallback ZIP](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.2/Vextra-1.0.2-chromium-tab.zip). See [installation details](docs/INSTALLATION.md) for compatibility notes.
 
 ### Updating manually
 
@@ -118,7 +118,7 @@ Open a YouTube video and launch Vextra's side panel. Choose **Current Video**, t
 
 ### Extract from a URL
 
-Choose **From URL**, paste a supported YouTube link and find its caption languages. Select a track and extract. Standard watch links, short-host links, mobile links, Shorts and live-video URL forms are recognised. This mode uses public caption acquisition without automatically opening a source tab.
+Choose **From URL**, paste a supported YouTube link and find its caption languages. Select a track and extract. Standard watch links, short-host links, mobile links, Shorts and live-video URL forms are recognised. If direct retrieval returns no caption content, Vextra opens one temporary, inactive, muted YouTube tab and reads its accessible transcript. The tab closes after the operation; no manual navigation is required.
 
 ### Read and search
 

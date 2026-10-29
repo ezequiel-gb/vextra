@@ -102,3 +102,39 @@ describe("restricted network boundary", () => {
     ).toBe("");
   });
 });
+
+it.each([
+  [403, "CAPTION_FETCH_FAILED"],
+  [404, "VIDEO_UNAVAILABLE"],
+  [503, "NETWORK"],
+])(
+  "reports HTTP %s without interpreting its body as captions",
+  async (status, code) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("failure", { status })),
+    );
+    await expect(
+      youtubeRequest(
+        new URL("https://www.youtube.com/api/timedtext"),
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({ code });
+  },
+);
+it("reports a rejected redirect instead of following it", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockRejectedValue(new TypeError("redirect disallowed")),
+  );
+  await expect(
+    youtubeRequest(
+      new URL("https://www.youtube.com/api/timedtext"),
+      new AbortController().signal,
+    ),
+  ).rejects.toMatchObject({ code: "NETWORK" });
+  expect(fetch).toHaveBeenCalledWith(
+    expect.any(URL),
+    expect.objectContaining({ redirect: "error" }),
+  );
+});

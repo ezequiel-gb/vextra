@@ -4,7 +4,7 @@
 
 Vextra uses caption tracks supplied by YouTube. Availability depends on the video, selected language and YouTube's access requirements. A visible track can still return an empty or inaccessible caption response. Vextra reports the condition and keeps existing documents available.
 
-Current Video can read YouTube's legacy or modern transcript panel when direct retrieval returns an empty response. The panel must expose a complete timed model; clear any search in YouTube's panel before extracting. When a modern panel does not confirm the selected language, Vextra extracts the transcript currently shown there and marks its language and caption type as unidentified. A notice explains that the selected track metadata has not been assigned. From URL uses public acquisition without opening a source tab. Consent and sign-in decisions remain with you.
+Current Video can read YouTube's legacy or modern transcript panel when direct retrieval returns an empty response. The panel must expose a complete timed model; clear any search in YouTube's panel before extracting. When a modern panel does not confirm the selected language, Vextra extracts the transcript currently shown there and marks its language and caption type as unidentified. A notice explains that the selected track metadata has not been assigned. From URL and Batch URLs automatically use the same reader through one temporary, inactive, muted YouTube tab when direct caption retrieval returns no content. The tab closes after the operation; no manual navigation is required. Consent and sign-in decisions remain with you.
 
 Vextra does not transcribe audio, translate captions or bypass private/restricted content. It preserves the wording and timing provided by the source captions.
 

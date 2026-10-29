@@ -231,3 +231,25 @@ it("rejects modern continuation records rather than returning partial success", 
     error: "NATIVE_TRANSCRIPT_UNAVAILABLE",
   });
 });
+it("waits for transcript controls that mount after the document load event", async () => {
+  const task = readNativeTranscript({ ...input, singleTrack: true });
+  setTimeout(() => {
+    document.body.innerHTML =
+      "<ytd-video-description-transcript-section-renderer><button>Show transcript</button></ytd-video-description-transcript-section-renderer>";
+    document.querySelector("button")!.addEventListener("click", modernFixture);
+  }, 1800);
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(JSON.parse((await task).payload!).events).toHaveLength(3);
+});
+it("selects Transcript in a consolidated panel without the legacy target identifier", async () => {
+  document.body.innerHTML =
+    "<ytd-video-description-transcript-section-renderer><button>Show transcript</button></ytd-video-description-transcript-section-renderer>";
+  document.querySelector("button")!.addEventListener("click", () => {
+    document.body.innerHTML =
+      '<ytd-engagement-panel-section-list-renderer><button role="tab" aria-selected="false">Transcript</button></ytd-engagement-panel-section-list-renderer>';
+    document.querySelector("button")!.addEventListener("click", modernFixture);
+  });
+  const task = readNativeTranscript({ ...input, singleTrack: true });
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(JSON.parse((await task).payload!).events).toHaveLength(3);
+});

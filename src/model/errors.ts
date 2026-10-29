@@ -1,8 +1,9 @@
 const messages: Record<string, string> = {
+  SELECTED_TRACK_UNAVAILABLE: "The selected caption track is no longer available. Refresh the caption languages and select another track.",
   NATIVE_FILTER_ACTIVE:
     "Clear the search in YouTube’s transcript panel, then retry Vextra to extract the full transcript.",
   NATIVE_TRANSCRIPT_UNAVAILABLE:
-    "YouTube’s transcript panel did not provide timed entries. Open its Transcript tab to check availability, then retry Vextra.",
+    "YouTube did not expose a complete timed transcript. Retry, select another caption track or check access to the video.",
   NATIVE_LANGUAGE_UNVERIFIED:
     "Vextra could not verify the selected language in YouTube’s transcript panel. Select the same language there, then retry.",
   INVALID_URL: "Enter a supported YouTube video link.",
@@ -22,7 +23,7 @@ const messages: Record<string, string> = {
   CAPTION_FETCH_FAILED:
     "The caption track could not be retrieved. Retry to refresh its video information.",
   CAPTION_ACCESS_REQUIRED:
-    "YouTube returned an empty caption response. Try Current Video with YouTube’s transcript panel open, or select another caption track.",
+    "YouTube did not provide caption content for this track. Retry or select another caption language.",
   RATE_LIMITED: "YouTube is limiting requests. Wait before retrying.",
   NETWORK: "The network request failed. Check your connection and retry.",
   TIMEOUT: "The request timed out. Retry when the connection is available.",

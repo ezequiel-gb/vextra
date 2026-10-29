@@ -150,15 +150,20 @@ export async function readNativeTranscript(input: {
   };
   try {
     let container = find("ytd-transcript-renderer");
-    if (!container && !modernPanel()) {
+    while (!container && !modernPanel() && Date.now() < deadline) {
+      if (!validVideo()) return { error: "UNSUPPORTED_PAGE" };
       const expand = find("ytd-watch-metadata #expand");
       expand?.click();
       await pause();
       const open = find(
         "ytd-video-description-transcript-section-renderer button",
       );
-      if (!open) return { error: "NATIVE_TRANSCRIPT_UNAVAILABLE" };
-      open.click();
+      if (open) {
+        open.click();
+        break;
+      }
+      await pause();
+      container = find("ytd-transcript-renderer");
     }
     let languageSelected = false,
       sawTimedRows = false;
@@ -187,8 +192,20 @@ export async function readNativeTranscript(input: {
         await pause();
         continue;
       }
-      const panel = find(
-        'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"]',
+      const panel = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          "ytd-engagement-panel-section-list-renderer",
+        ),
+      ).find(
+        (n) =>
+          visible(n) &&
+          (n.getAttribute("target-id") ===
+            "engagement-panel-searchable-transcript" ||
+            Array.from(n.querySelectorAll('[role="tab"]')).some((tab) =>
+              /^(transcript|transcripci[oó]n|transcription|transkript)$/i.test(
+                tab.textContent?.trim() ?? "",
+              ),
+            )),
       );
       if (panel && !switchedTab) {
         const tab = Array.from(

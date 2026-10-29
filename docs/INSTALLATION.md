@@ -1,6 +1,6 @@
 # Installation and updating
 
-Download [Vextra-1.0.1-chromium.zip](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.1/Vextra-1.0.1-chromium.zip) from [GitHub Releases](https://github.com/ezequiel-gb/vextra/releases). See [caption availability and compatibility](LIMITATIONS.md) for source and browser requirements.
+Download [Vextra-1.0.2-chromium.zip](https://github.com/ezequiel-gb/vextra/releases/download/v1.0.2/Vextra-1.0.2-chromium.zip) from [GitHub Releases](https://github.com/ezequiel-gb/vextra/releases). See [caption availability and compatibility](LIMITATIONS.md) for source and browser requirements.
 
 Extract the distribution ZIP first. Open your Chromium browser’s extensions manager, enable Developer mode, choose Load unpacked and select the folder containing `manifest.json`. In a source checkout this is `dist/chromium-panel`. Pin Vextra and click the toolbar icon. The browser’s side panel should open; the header’s arrow opens an expanded Vextra tab.
 
@@ -16,26 +16,26 @@ The extracted folder must remain available after installation. Use the named Chr
 
 ## Verify download integrity
 
-Download `SHA256SUMS.txt` alongside the named ZIP from the same [official release](https://github.com/ezequiel-gb/vextra/releases/tag/v1.0.1). Before extracting the archive, calculate its SHA-256 checksum and compare all 64 hexadecimal characters with the line for that filename. Letter case does not matter.
+Download `SHA256SUMS.txt` alongside the named ZIP from the same [official release](https://github.com/ezequiel-gb/vextra/releases/tag/v1.0.2). Before extracting the archive, calculate its SHA-256 checksum and compare all 64 hexadecimal characters with the line for that filename. Letter case does not matter.
 
 Windows PowerShell:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\Vextra-1.0.1-chromium.zip
+Get-FileHash -Algorithm SHA256 .\Vextra-1.0.2-chromium.zip
 Get-Content .\SHA256SUMS.txt
 ```
 
 Linux:
 
 ```sh
-sha256sum Vextra-1.0.1-chromium.zip
+sha256sum Vextra-1.0.2-chromium.zip
 cat SHA256SUMS.txt
 ```
 
 macOS:
 
 ```sh
-shasum -a 256 Vextra-1.0.1-chromium.zip
+shasum -a 256 Vextra-1.0.2-chromium.zip
 cat SHA256SUMS.txt
 ```
 

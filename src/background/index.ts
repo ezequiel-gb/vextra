@@ -2,6 +2,9 @@ import { readPlayer } from "../content/read-player.ts";
 import { readNativeTranscript } from "../content/read-transcript.ts";
 import { parseUrl } from "../source/youtube/urls.ts";
 import { pageRequest } from "./messages.ts";
+import { installSourceTabs } from "./source-tabs.ts";
+
+installSourceTabs();
 
 async function tabFallback() {
   const url = chrome.runtime.getURL("panel.html");

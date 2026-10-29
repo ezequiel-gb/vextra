@@ -1,10 +1,12 @@
 import { VextraError } from "../../model/errors.ts";
 import { hosts } from "./urls.ts";
 import { limits } from "../../model/limits.ts";
+import { diagnostic, type ExtractionContext } from "./diagnostics.ts";
 
 export async function youtubeRequest(
   url: URL,
   signal: AbortSignal,
+  context?: ExtractionContext,
 ): Promise<string> {
   if (
     url.protocol !== "https:" ||
@@ -23,6 +25,12 @@ export async function youtubeRequest(
       referrerPolicy: "no-referrer",
       signal: AbortSignal.any([signal, timeout]),
     });
+    if (context)
+      diagnostic(context, "response", {
+        status: response.status,
+        contentType: response.headers.get("content-type")?.slice(0, 100) ?? "",
+        execution: "extension-page",
+      });
     if (response.status === 429) {
       const h = response.headers.get("retry-after");
       const sec = Number(h);
@@ -58,11 +66,16 @@ export async function youtubeRequest(
           throw new VextraError("RESPONSE_SIZE_LIMIT");
         text += decoder.decode(value, { stream: true });
       }
+      if (context) diagnostic(context, "response-body", { bytes: total });
       return text + decoder.decode();
     } finally {
       await reader.cancel().catch(() => undefined);
     }
   } catch (e) {
+    if (context)
+      diagnostic(context, "request-failed", {
+        error: e instanceof VextraError ? e.code : "NETWORK",
+      });
     if (signal.aborted)
       throw new VextraError(
         signal.reason instanceof DOMException &&
